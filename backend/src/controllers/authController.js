@@ -1,5 +1,5 @@
 'use strict';
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { z } = require('zod');
 const prisma = require('../config/prisma');
@@ -17,38 +17,38 @@ const resetStore = new Map();
 const sendOtpSchema = z.object({
   email: z.string().email(),
   phone: z.string().optional().nullable(),
-  name: z.string().optional().nullable(),
+  name:  z.string().optional().nullable(),
   channel: z.enum(['EMAIL', 'PHONE']).default('EMAIL'),
 });
 
 const verifyOtpSchema = z.object({
   email: z.string().email(),
-  otp: z.string().length(6, 'OTP must be 6 digits'),
+  otp:   z.string().length(6, 'OTP must be 6 digits'),
   channel: z.enum(['EMAIL', 'PHONE']).optional(),
 });
 
 const registerSchema = z.object({
-  name: z.string().min(2),
-  email: z.string().email(),
-  password: z.string().min(8),
-  otp: z.string().length(6, 'OTP must be 6 digits').optional(),
-  phone: z.string().optional().nullable(),
-  channel: z.enum(['EMAIL', 'PHONE']).optional(),
-  role: z.enum(['STUDENT', 'FRESHER', 'EXPERIENCED']),
+  name:          z.string().min(2),
+  email:         z.string().email(),
+  password:      z.string().min(8),
+  otp:           z.string().length(6, 'OTP must be 6 digits').optional(),
+  phone:         z.string().optional().nullable(),
+  channel:       z.enum(['EMAIL', 'PHONE']).optional(),
+  role:          z.enum(['STUDENT', 'FRESHER', 'EXPERIENCED']),
   qualification: z.string().min(1),
-  department: z.string().min(1),
-  college: z.string().optional().nullable(),
-  location: z.string().optional().nullable(),
-  domain: z.string().optional().nullable(),
-  targetRole: z.string().optional().nullable(),
-  dailyHours: z.coerce.number().optional().nullable(),
-  yearsExp: z.coerce.number().optional().nullable(),
-  prevCompany: z.string().optional().nullable(),
-  switchReason: z.string().optional().nullable(),
+  department:    z.string().min(1),
+  college:       z.string().optional().nullable(),
+  location:      z.string().optional().nullable(),
+  domain:        z.string().optional().nullable(),
+  targetRole:    z.string().optional().nullable(),
+  dailyHours:    z.coerce.number().optional().nullable(),
+  yearsExp:      z.coerce.number().optional().nullable(),
+  prevCompany:   z.string().optional().nullable(),
+  switchReason:  z.string().optional().nullable(),
 });
 
 const loginSchema = z.object({
-  email: z.string().email(),
+  email:    z.string().email(),
   password: z.string().min(1),
 });
 
@@ -178,21 +178,21 @@ async function register(req, res, next) {
     const passwordHash = await bcrypt.hash(data.password, SALT_ROUNDS);
     const user = await prisma.user.create({
       data: {
-        name: data.name,
-        email: data.email,
+        name:          data.name,
+        email:         data.email,
         passwordHash,
-        phone: data.phone,
-        role: data.role,
+        phone:         data.phone,
+        role:          data.role,
         qualification: data.qualification,
-        department: data.department,
-        college: data.college,
-        location: data.location,
-        domain: data.domain,
-        targetRole: data.targetRole,
-        dailyHours: data.dailyHours ?? 2,
-        yearsExp: data.yearsExp,
-        prevCompany: data.prevCompany,
-        switchReason: data.switchReason,
+        department:    data.department,
+        college:       data.college,
+        location:      data.location,
+        domain:        data.domain,
+        targetRole:    data.targetRole,
+        dailyHours:    data.dailyHours ?? 2,
+        yearsExp:      data.yearsExp,
+        prevCompany:   data.prevCompany,
+        switchReason:  data.switchReason,
       },
     });
 
