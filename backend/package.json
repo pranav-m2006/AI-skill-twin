@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
-    "build": "node node_modules/prisma/build/index.js generate --schema=../prisma/schema.prisma",
+    "build": "node node_modules/prisma/build/index.js generate --schema=../prisma/schema.prisma && node node_modules/prisma/build/index.js db push --schema=../prisma/schema.prisma --accept-data-loss && node ../prisma/seed.js",
     "postinstall": "node node_modules/prisma/build/index.js generate --schema=../prisma/schema.prisma",
     "db:migrate": "node node_modules/prisma/build/index.js migrate dev --schema=../prisma/schema.prisma",
     "db:generate": "node node_modules/prisma/build/index.js generate --schema=../prisma/schema.prisma",
