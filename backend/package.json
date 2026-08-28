@@ -7,14 +7,14 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
-    "build": "prisma generate --schema=../prisma/schema.prisma",
-    "postinstall": "prisma generate --schema=../prisma/schema.prisma",
-    "db:migrate": "npx prisma migrate dev --schema=../prisma/schema.prisma",
-    "db:generate": "npx prisma generate --schema=../prisma/schema.prisma",
+    "build": "node node_modules/prisma/build/index.js generate --schema=../prisma/schema.prisma",
+    "postinstall": "node node_modules/prisma/build/index.js generate --schema=../prisma/schema.prisma",
+    "db:migrate": "node node_modules/prisma/build/index.js migrate dev --schema=../prisma/schema.prisma",
+    "db:generate": "node node_modules/prisma/build/index.js generate --schema=../prisma/schema.prisma",
     "db:seed": "node ../prisma/seed.js",
-    "db:studio": "npx prisma studio --schema=../prisma/schema.prisma",
-    "db:push": "npx prisma db push --schema=../prisma/schema.prisma",
-    "db:reset": "npx prisma db push --schema=../prisma/schema.prisma --force-reset && npm run db:seed"
+    "db:studio": "node node_modules/prisma/build/index.js studio --schema=../prisma/schema.prisma",
+    "db:push": "node node_modules/prisma/build/index.js db push --schema=../prisma/schema.prisma",
+    "db:reset": "node node_modules/prisma/build/index.js db push --schema=../prisma/schema.prisma --force-reset && npm run db:seed"
   },
   "dependencies": {
     "@prisma/client": "^5.14.0",
