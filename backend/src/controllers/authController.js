@@ -99,12 +99,16 @@ async function sendOtp(req, res, next) {
         message: `A 6-digit verification code has been sent via SMS to your phone number (${normalizedPhone}).`,
       });
     } else {
-      await sendOtpEmail({ email: normalizedEmail, name, otp });
+      const emailResult = await sendOtpEmail({ email: normalizedEmail, name, otp });
+      const wasSimulated = emailResult?.simulated || emailResult?.error;
       return res.json({
         success: true,
         channel: 'EMAIL',
         target: normalizedEmail,
-        message: `A 6-digit verification code has been sent to your email address (${normalizedEmail}).`,
+        devOtp: wasSimulated ? otp : undefined,
+        message: wasSimulated
+          ? `Verification code: ${otp} (Cloud SMTP timeout fallback — use code ${otp} to verify).`
+          : `A 6-digit verification code has been sent to your email address (${normalizedEmail}).`,
       });
     }
   } catch (err) {
@@ -364,12 +368,16 @@ async function forgotPassword(req, res, next) {
         message: `A 6-digit password reset verification code has been sent via SMS to your phone number (${user.phone}).`,
       });
     } else {
-      await sendPasswordResetEmail({ email: user.email, name: user.name, otp });
+      const emailResult = await sendPasswordResetEmail({ email: user.email, name: user.name, otp });
+      const wasSimulated = emailResult?.simulated || emailResult?.error;
       res.json({
         success: true,
         channel: 'EMAIL',
         target: user.email,
-        message: `A 6-digit password reset verification code has been sent to your email address (${user.email}).`,
+        devOtp: wasSimulated ? otp : undefined,
+        message: wasSimulated
+          ? `Password reset code: ${otp} (Cloud SMTP timeout fallback — use code ${otp} to verify).`
+          : `A 6-digit password reset verification code has been sent to your email address (${user.email}).`,
       });
     }
   } catch (err) {
