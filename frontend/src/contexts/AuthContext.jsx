@@ -14,8 +14,20 @@ const AuthContext = createContext(null);
  */
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
-    try { return JSON.parse(sessionStorage.getItem('placemate_user')); }
-    catch { return null; }
+    try {
+      const token = sessionStorage.getItem('placemate_token');
+      const userStr = sessionStorage.getItem('placemate_user');
+      if (!token || !userStr) {
+        sessionStorage.removeItem('placemate_user');
+        sessionStorage.removeItem('placemate_token');
+        return null;
+      }
+      return JSON.parse(userStr);
+    } catch {
+      sessionStorage.removeItem('placemate_user');
+      sessionStorage.removeItem('placemate_token');
+      return null;
+    }
   });
 
   const login = useCallback(async (email, password) => {

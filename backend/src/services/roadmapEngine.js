@@ -816,9 +816,12 @@ Exact JSON format required:
   }
 ]`;
 
-  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
+      signal: controller.signal,
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
@@ -832,10 +835,12 @@ Exact JSON format required:
         temperature: 0.3,
       }),
     });
+    clearTimeout(timeoutId);
 
     const json = await res.json();
     let text = json.choices?.[0]?.message?.content || '';
     text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    if (!text) return null;
     const parsed = JSON.parse(text);
     return Array.isArray(parsed) && parsed.length > 0 ? parsed : null;
   } catch (err) {

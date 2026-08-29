@@ -4,27 +4,21 @@ const nodemailer = require('nodemailer');
 
 // Helper to create a nodemailer transporter based on env config
 async function createTransporter() {
-  const host = process.env.SMTP_HOST;
-  const port = parseInt(process.env.SMTP_PORT || '587', 10);
+  const host = process.env.SMTP_HOST || 'smtp.gmail.com';
+  const port = parseInt(process.env.SMTP_PORT || '465', 10);
   const user = process.env.SMTP_USER || 'pranavmahe6@gmail.com';
   const pass = process.env.SMTP_PASS || 'vfuptcnonvpqqadd';
 
   if (user && pass) {
-    if (host && host.toLowerCase().includes('gmail')) {
-      return {
-        transporter: nodemailer.createTransport({
-          service: 'gmail',
-          auth: { user, pass },
-        }),
-        isReal: true,
-      };
-    }
     return {
       transporter: nodemailer.createTransport({
         host,
         port,
         secure: port === 465,
         auth: { user, pass },
+        connectionTimeout: 4000,
+        greetingTimeout: 4000,
+        socketTimeout: 4000,
       }),
       isReal: true,
     };
@@ -54,7 +48,7 @@ async function createTransporter() {
 /**
  * Sends an email using nodemailer with a strict timeout to prevent HTTP request delays.
  */
-function sendMailWithTimeout(transporter, mailOptions, timeoutMs = 12000) {
+function sendMailWithTimeout(transporter, mailOptions, timeoutMs = 5000) {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
       reject(new Error(`SMTP mail dispatch timed out after ${timeoutMs}ms`));
@@ -266,7 +260,7 @@ PlaceMate AI Security Team
       },
     };
 
-    const info = await sendMailWithTimeout(transporter, mailOptions, 12000);
+    const info = await sendMailWithTimeout(transporter, mailOptions, 5000);
     console.log(`[PlaceMate AI Email] Login notification dispatched to ${email}:`, info.messageId || info);
     return { success: true, messageId: info.messageId };
   } catch (err) {
@@ -367,7 +361,7 @@ PlaceMate AI Team
       },
     };
 
-    const info = await sendMailWithTimeout(transporter, mailOptions, 12000);
+    const info = await sendMailWithTimeout(transporter, mailOptions, 5000);
     console.log(`[PlaceMate AI Email OTP] Verification OTP (${otp}) dispatched to ${email}:`, info.messageId || info);
     return { success: true, messageId: info.messageId, otp };
   } catch (err) {
@@ -466,7 +460,7 @@ PlaceMate AI Security Team
       },
     };
 
-    const info = await sendMailWithTimeout(transporter, mailOptions, 12000);
+    const info = await sendMailWithTimeout(transporter, mailOptions, 5000);
     console.log(`[PlaceMate AI Reset Email] Password reset code (${otp}) sent to ${email}:`, info.messageId || info);
     return { success: true, messageId: info.messageId, otp };
   } catch (err) {

@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
-  timeout: 15000,
+  timeout: 45000,
 });
 
 // Attach JWT token to every request — reads from sessionStorage
@@ -26,9 +26,9 @@ api.interceptors.response.use(
     // Enhance Network / Timeout Error messages for UI
     if (!err.response) {
       if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
-        err.message = 'Connection timed out. Please check your network and backend server status.';
+        err.message = 'Connection timed out. Render backend may be waking up from sleep. Please retry in a few seconds.';
       } else {
-        err.message = 'Unable to connect to PlaceMate AI server. Please make sure backend is running on http://localhost:5000.';
+        err.message = 'Unable to connect to PlaceMate AI backend server. Please verify backend URL and environment configuration.';
       }
     }
     return Promise.reject(err);
