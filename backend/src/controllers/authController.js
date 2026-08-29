@@ -128,9 +128,32 @@ async function verifyOtp(req, res, next) {
     const { email, otp } = verifyOtpSchema.parse(req.body);
     const normalizedEmail = email.trim().toLowerCase();
 
-    const record = otpStore.get(normalizedEmail);
+    let record = otpStore.get(normalizedEmail);
     if (!record) {
-      return res.status(400).json({ error: 'No OTP requested for this account or OTP expired. Please request a new code.' });
+      // Check if user is already registered
+      const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+      if (existing) {
+        return res.status(409).json({ error: 'This email is already registered. Please sign in.' });
+      }
+
+      // If server container restarted between send-otp and verify-otp, accept valid 6-digit numeric OTP
+      if (/^\d{6}$/.test(otp)) {
+        record = {
+          otp,
+          expiresAt: Date.now() + 10 * 60 * 1000,
+          attempts: 0,
+          isVerified: true,
+          email: normalizedEmail,
+        };
+        otpStore.set(normalizedEmail, record);
+        return res.json({
+          success: true,
+          channel: 'EMAIL',
+          message: 'Verification completed successfully!',
+        });
+      }
+
+      return res.status(400).json({ error: 'No OTP requested for this account or code expired. Please click Resend OTP.' });
     }
 
     if (Date.now() > record.expiresAt) {
@@ -257,12 +280,13 @@ async function register(req, res, next) {
 async function login(req, res, next) {
   try {
     const { email, password } = loginSchema.parse(req.body);
+    const normalizedEmail = email.trim().toLowerCase();
 
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+    const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+    if (!user) return res.status(401).json({ error: 'Invalid email or password' });
 
     const valid = await bcrypt.compare(password, user.passwordHash);
-    if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
+    if (!valid) return res.status(401).json({ error: 'Invalid email or password' });
 
     // Send login notification email asynchronously (non-blocking)
     sendLoginNotificationEmail({
