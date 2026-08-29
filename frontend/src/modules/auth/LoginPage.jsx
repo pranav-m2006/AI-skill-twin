@@ -23,6 +23,7 @@ export default function LoginPage() {
   const [forgotLoading, setForgotLoading]     = useState(false);
   const [forgotError, setForgotError]         = useState('');
   const [forgotMsg, setForgotMsg]             = useState('');
+  const [resetDevOtp, setResetDevOtp]         = useState('');
 
   const { login } = useAuth();
   const navigate  = useNavigate();
@@ -49,6 +50,7 @@ export default function LoginPage() {
     e.preventDefault();
     setForgotError('');
     setForgotMsg('');
+    setResetDevOtp('');
     if (!resetEmail || !resetEmail.includes('@')) {
       setForgotError('Please enter a valid email address.');
       return;
@@ -57,6 +59,7 @@ export default function LoginPage() {
     try {
       const { data } = await api.post('/auth/forgot-password', { email: resetEmail });
       setForgotMsg(data.message || 'Verification code sent to your email.');
+      if (data.devOtp) setResetDevOtp(data.devOtp);
       setForgotStep(2);
     } catch (err) {
       setForgotError(err.response?.data?.error || 'Failed to send password reset code. Please verify your email.');
@@ -296,6 +299,21 @@ export default function LoginPage() {
               </form>
             ) : (
               <form onSubmit={handleSaveNewPassword} className="space-y-4">
+                {resetDevOtp && (
+                  <div className="bg-accent-blue/15 border border-accent-blue/40 rounded-xl p-2.5 text-center space-y-1">
+                    <div className="text-[12px] font-semibold text-accent-blue flex items-center justify-center gap-1.5">
+                      <ShieldCheck size={15} /> Dev Reset Code: <span className="font-mono text-[15px] tracking-widest font-bold text-white bg-accent-blue px-2 py-0.5 rounded">{resetDevOtp}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setResetOtp(resetDevOtp)}
+                      className="text-[11px] font-bold text-accent-blue hover:underline"
+                    >
+                      ⚡ Auto-fill code {resetDevOtp}
+                    </button>
+                  </div>
+                )}
+
                 <div>
                   <label className="text-[12px] font-medium text-muted block mb-1">6-Digit Email Verification Code</label>
                   <input

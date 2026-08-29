@@ -234,6 +234,7 @@ export default function SignupPage() {
   const [otpError, setOtpError] = useState('');
   const [otpSuccessMsg, setOtpSuccessMsg] = useState('');
   const [otpLoading, setOtpLoading] = useState(false);
+  const [devOtpHint, setDevOtpHint] = useState('');
   const [cooldown, setCooldown] = useState(0);
 
   const inputRefs = useRef([]);
@@ -313,6 +314,8 @@ export default function SignupPage() {
       setOtpChannel(channelToUse);
       setOtpSentTarget(response.data.target || (channelToUse === 'PHONE' ? phoneToSend : form.email));
       setOtpSuccessMsg(response.data.message || `A 6-digit OTP code has been sent via ${channelToUse === 'PHONE' ? 'SMS' : 'Email'}!`);
+      if (response.data.devOtp) setDevOtpHint(response.data.devOtp);
+      else setDevOtpHint('');
       setShowOtpModal(true);
       setOtpDigits(['', '', '', '', '', '']);
       setOtpError('');
@@ -334,6 +337,7 @@ export default function SignupPage() {
   const handleChannelChange = async (newChannel) => {
     if (newChannel === otpChannel && showOtpModal) return;
     setOtpChannel(newChannel);
+    setDevOtpHint('');
     setOtpError('');
     setOtpSuccessMsg('');
     await requestOtpAndOpenModal(newChannel);
@@ -355,6 +359,7 @@ export default function SignupPage() {
       setCooldown(30);
       setOtpError('');
       if (response.data.devOtp) setDevOtpHint(response.data.devOtp);
+      else setDevOtpHint('');
       setOtpSuccessMsg(response.data.message || `Resent OTP via ${otpChannel === 'PHONE' ? 'SMS' : 'Email'}.`);
     } catch (err) {
       setOtpError(err.response?.data?.error || 'Failed to resend OTP.');
@@ -921,6 +926,25 @@ export default function SignupPage() {
                     ✉️ Code sent via Email to <strong className="text-accent-blue font-semibold">{otpSentTarget || form.email}</strong>
                   </span>
                 )}
+              </div>
+            )}
+
+            {devOtpHint && (
+              <div className="bg-accent-blue/15 border border-accent-blue/40 rounded-xl p-3 text-center space-y-1.5">
+                <div className="text-[12px] font-semibold text-accent-blue flex items-center justify-center gap-1.5">
+                  <ShieldCheck size={16} /> Dev Verification Code: <span className="font-mono text-[16px] tracking-widest font-extrabold text-white bg-accent-blue px-2 py-0.5 rounded shadow">{devOtpHint}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOtpDigits(devOtpHint.split(''));
+                    inputRefs.current[5]?.focus();
+                  }}
+                  className="text-[11px] font-bold text-accent-blue hover:underline bg-card/80 px-3 py-1 rounded-lg border border-accent-blue/30 transition-all shadow-sm"
+                  id="auto-fill-otp-btn"
+                >
+                  ⚡ Click to Auto-Fill Code {devOtpHint}
+                </button>
               </div>
             )}
 

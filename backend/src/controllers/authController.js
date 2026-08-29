@@ -91,12 +91,16 @@ async function sendOtp(req, res, next) {
     });
 
     if (channel === 'PHONE') {
-      await sendOtpSms({ phone: normalizedPhone, name, otp });
+      const smsResult = await sendOtpSms({ phone: normalizedPhone, name, otp });
+      const wasSimulated = smsResult?.simulated || !smsResult?.isReal || smsResult?.error;
       return res.json({
         success: true,
         channel: 'PHONE',
         target: normalizedPhone,
-        message: `A 6-digit verification code has been sent via SMS to your phone number (${normalizedPhone}).`,
+        devOtp: wasSimulated ? otp : undefined,
+        message: wasSimulated
+          ? `Verification code: ${otp} (SMS simulated mode — use code ${otp} to verify).`
+          : `A 6-digit verification code has been sent via SMS to your phone number (${normalizedPhone}).`,
       });
     } else {
       const emailResult = await sendOtpEmail({ email: normalizedEmail, name, otp });
@@ -360,12 +364,16 @@ async function forgotPassword(req, res, next) {
     });
 
     if (channel === 'PHONE' && user.phone) {
-      await sendOtpSms({ phone: user.phone, name: user.name, otp });
+      const smsResult = await sendOtpSms({ phone: user.phone, name: user.name, otp });
+      const wasSimulated = smsResult?.simulated || !smsResult?.isReal || smsResult?.error;
       res.json({
         success: true,
         channel: 'PHONE',
         target: user.phone,
-        message: `A 6-digit password reset verification code has been sent via SMS to your phone number (${user.phone}).`,
+        devOtp: wasSimulated ? otp : undefined,
+        message: wasSimulated
+          ? `Password reset code: ${otp} (SMS simulated mode — use code ${otp} to verify).`
+          : `A 6-digit password reset verification code has been sent via SMS to your phone number (${user.phone}).`,
       });
     } else {
       const emailResult = await sendPasswordResetEmail({ email: user.email, name: user.name, otp });

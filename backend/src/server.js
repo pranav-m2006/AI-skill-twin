@@ -34,10 +34,17 @@ app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps or curl)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+    
+    // Check exact matches or vercel subdomains
+    const isAllowed = allowedOrigins.includes(origin) || 
+                      origin.endsWith('.vercel.app') ||
+                      /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+
+    if (isAllowed) {
       return callback(null, true);
     }
-    return callback(new Error('Not allowed by CORS'));
+    // Return false instead of throwing Error to prevent HTTP/2 protocol stream crashes
+    return callback(null, false);
   },
   credentials: true,
 }));

@@ -106,6 +106,9 @@ async function createTransporter() {
         port,
         secure: port === 465,
         auth: { user, pass },
+        tls: {
+          rejectUnauthorized: false,
+        },
         connectionTimeout: 4000,
         greetingTimeout: 4000,
         socketTimeout: 4000,
