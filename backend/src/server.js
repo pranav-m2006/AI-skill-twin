@@ -32,22 +32,18 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl)
+    // Allow requests with no origin (like mobile apps, curl, server-to-server)
     if (!origin) return callback(null, true);
-    
-    // Check exact matches or vercel subdomains
-    const isAllowed = allowedOrigins.includes(origin) || 
-                      origin.endsWith('.vercel.app') ||
-                      /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
-
-    if (isAllowed) {
-      return callback(null, true);
-    }
-    // Return false instead of throwing Error to prevent HTTP/2 protocol stream crashes
-    return callback(null, false);
+    // Echo back requesting origin to guarantee Access-Control-Allow-Origin header is present
+    return callback(null, origin);
   },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
 }));
+
+// Enable pre-flight for all routes
+app.options('*', cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
