@@ -231,12 +231,6 @@ The PlaceMate AI Team
  */
 async function sendLoginNotificationEmail({ email, name }) {
   try {
-    if (process.env.RESEND_API_KEY) {
-      const resendRes = await sendEmailViaResend({ to: email, subject, html: htmlContent, text: textContent });
-      if (resendRes && resendRes.success) return resendRes;
-    }
-
-    const { transporter } = await createTransporter();
     const senderEmail = process.env.SMTP_USER || 'pranavmahe6@gmail.com';
     const fromAddress = `"PlaceMate AI" <${senderEmail}>`;
     const timeString = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' });
@@ -299,6 +293,13 @@ Best regards,
 PlaceMate AI Security Team
     `;
 
+    if (process.env.RESEND_API_KEY) {
+      const resendRes = await sendEmailViaResend({ to: email, subject, html: htmlContent, text: textContent });
+      if (resendRes && resendRes.success) return resendRes;
+    }
+
+    const { transporter } = await createTransporter();
+
     const mailOptions = {
       from: fromAddress,
       replyTo: senderEmail,
@@ -337,15 +338,8 @@ async function sendOtpEmail({ email, name, otp }) {
   console.log(`==================================================\n`);
 
   try {
-    if (process.env.RESEND_API_KEY) {
-      const resendRes = await sendEmailViaResend({ to: email, subject, html: htmlContent, text: textContent });
-      if (resendRes && resendRes.success) return { success: true, messageId: resendRes.messageId, otp };
-    }
-
-    const { transporter } = await createTransporter();
     const senderEmail = process.env.SMTP_USER || 'pranavmahe6@gmail.com';
     const fromAddress = `"PlaceMate AI Verification" <${senderEmail}>`;
-
     const subject = `PlaceMate AI Verification Code: ${otp}`;
 
     const htmlContent = `
@@ -404,6 +398,12 @@ Best regards,
 PlaceMate AI Team
     `;
 
+    if (process.env.RESEND_API_KEY) {
+      const resendRes = await sendEmailViaResend({ to: email, subject, html: htmlContent, text: textContent });
+      if (resendRes && resendRes.success) return { success: true, messageId: resendRes.messageId, otp };
+    }
+
+    const { transporter } = await createTransporter();
     const mailOptions = {
       from: fromAddress,
       replyTo: senderEmail,
@@ -443,12 +443,6 @@ async function sendPasswordResetEmail({ email, name, otp }) {
   console.log(`==================================================\n`);
 
   try {
-    if (process.env.RESEND_API_KEY) {
-      const resendRes = await sendEmailViaResend({ to: email, subject, html: htmlContent, text: textContent });
-      if (resendRes && resendRes.success) return { success: true, messageId: resendRes.messageId, otp };
-    }
-
-    const { transporter } = await createTransporter();
     const senderEmail = process.env.SMTP_USER || 'pranavmahe6@gmail.com';
     const fromAddress = `"PlaceMate AI Security" <${senderEmail}>`;
 
@@ -508,6 +502,12 @@ Best regards,
 PlaceMate AI Security Team
     `;
 
+    if (process.env.RESEND_API_KEY) {
+      const resendRes = await sendEmailViaResend({ to: email, subject, html: htmlContent, text: textContent });
+      if (resendRes && resendRes.success) return { success: true, messageId: resendRes.messageId, otp };
+    }
+
+    const { transporter } = await createTransporter();
     const mailOptions = {
       from: fromAddress,
       replyTo: senderEmail,
