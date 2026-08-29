@@ -47,6 +47,51 @@ async function sendEmailViaResend({ to, subject, html, text }) {
   }
 }
 
+/**
+ * Dispatches an email via Brevo.com (Sendinblue) v3 REST API (HTTPS Port 443).
+ * Allows sending emails to any recipient email address without domain verification restrictions.
+ */
+async function sendEmailViaBrevo({ to, subject, html, text }) {
+  const apiKey = process.env.BREVO_API_KEY || process.env.SENDINBLUE_API_KEY;
+  if (!apiKey) return null;
+
+  const senderEmail = process.env.SMTP_USER || 'pranavmahe6@gmail.com';
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      signal: controller.signal,
+      headers: {
+        'api-key': apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        sender: { name: 'PlaceMate AI', email: senderEmail },
+        to: [{ email: Array.isArray(to) ? to[0] : to }],
+        subject,
+        htmlContent: html,
+        textContent: text,
+      }),
+    });
+    clearTimeout(timeoutId);
+
+    const data = await response.json();
+    if (!response.ok) {
+      console.warn('[PlaceMate AI Brevo API Warning]:', data.message || response.statusText);
+      return { success: false, error: data.message || response.statusText };
+    }
+
+    console.log(`[PlaceMate AI Brevo API] Email sent successfully to ${to}:`, data.messageId || data.id);
+    return { success: true, messageId: data.messageId || data.id };
+  } catch (err) {
+    console.warn('[PlaceMate AI Brevo API Error]:', err.message);
+    return { success: false, error: err.message };
+  }
+}
+
 // Helper to create a nodemailer transporter based on env config
 async function createTransporter() {
   const host = process.env.SMTP_HOST || 'smtp.gmail.com';
@@ -190,6 +235,11 @@ Best regards,
 The PlaceMate AI Team
     `;
 
+    if (process.env.BREVO_API_KEY || process.env.SENDINBLUE_API_KEY) {
+      const brevoRes = await sendEmailViaBrevo({ to: email, subject, html: htmlContent, text: textContent });
+      if (brevoRes && brevoRes.success) return brevoRes;
+    }
+
     if (process.env.RESEND_API_KEY) {
       const resendRes = await sendEmailViaResend({ to: email, subject, html: htmlContent, text: textContent });
       if (resendRes && resendRes.success) return resendRes;
@@ -292,6 +342,11 @@ If this was you, no action is required.
 Best regards,
 PlaceMate AI Security Team
     `;
+
+    if (process.env.BREVO_API_KEY || process.env.SENDINBLUE_API_KEY) {
+      const brevoRes = await sendEmailViaBrevo({ to: email, subject, html: htmlContent, text: textContent });
+      if (brevoRes && brevoRes.success) return brevoRes;
+    }
 
     if (process.env.RESEND_API_KEY) {
       const resendRes = await sendEmailViaResend({ to: email, subject, html: htmlContent, text: textContent });
@@ -398,6 +453,11 @@ Best regards,
 PlaceMate AI Team
     `;
 
+    if (process.env.BREVO_API_KEY || process.env.SENDINBLUE_API_KEY) {
+      const brevoRes = await sendEmailViaBrevo({ to: email, subject, html: htmlContent, text: textContent });
+      if (brevoRes && brevoRes.success) return { success: true, messageId: brevoRes.messageId, otp };
+    }
+
     if (process.env.RESEND_API_KEY) {
       const resendRes = await sendEmailViaResend({ to: email, subject, html: htmlContent, text: textContent });
       if (resendRes && resendRes.success) return { success: true, messageId: resendRes.messageId, otp };
@@ -501,6 +561,11 @@ This code is valid for 10 minutes. If you did not request a password reset, plea
 Best regards,
 PlaceMate AI Security Team
     `;
+
+    if (process.env.BREVO_API_KEY || process.env.SENDINBLUE_API_KEY) {
+      const brevoRes = await sendEmailViaBrevo({ to: email, subject, html: htmlContent, text: textContent });
+      if (brevoRes && brevoRes.success) return { success: true, messageId: brevoRes.messageId, otp };
+    }
 
     if (process.env.RESEND_API_KEY) {
       const resendRes = await sendEmailViaResend({ to: email, subject, html: htmlContent, text: textContent });
