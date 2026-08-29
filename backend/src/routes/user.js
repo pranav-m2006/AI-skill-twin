@@ -22,11 +22,11 @@ const upload = multer({
   storage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
   fileFilter: (req, file, cb) => {
-    const allowed = ['.pdf', '.doc', '.docx'];
+    const allowed = ['.pdf', '.doc', '.docx', '.txt'];
     if (allowed.includes(path.extname(file.originalname).toLowerCase())) {
       cb(null, true);
     } else {
-      cb(new Error('Only PDF, DOC, DOCX files allowed'));
+      cb(new Error('Only PDF, DOC, DOCX, TXT files allowed'));
     }
   },
 });
