@@ -2,6 +2,51 @@
 
 const nodemailer = require('nodemailer');
 
+/**
+ * Dispatches an email via Resend.com REST API (HTTPS Port 443).
+ * Bypasses cloud host SMTP port blocking completely.
+ */
+async function sendEmailViaResend({ to, subject, html, text }) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return null;
+
+  const from = process.env.RESEND_FROM || 'PlaceMate AI <onboarding@resend.dev>';
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      signal: controller.signal,
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from,
+        to: Array.isArray(to) ? to : [to],
+        subject,
+        html,
+        text,
+      }),
+    });
+    clearTimeout(timeoutId);
+
+    const data = await response.json();
+    if (!response.ok) {
+      console.warn('[PlaceMate AI Resend API Warning]:', data.message || response.statusText);
+      return { success: false, error: data.message || response.statusText };
+    }
+
+    console.log(`[PlaceMate AI Resend API] Email sent successfully to ${to}:`, data.id);
+    return { success: true, messageId: data.id };
+  } catch (err) {
+    console.warn('[PlaceMate AI Resend API Error]:', err.message);
+    return { success: false, error: err.message };
+  }
+}
+
 // Helper to create a nodemailer transporter based on env config
 async function createTransporter() {
   const host = process.env.SMTP_HOST || 'smtp.gmail.com';
@@ -72,11 +117,7 @@ function sendMailWithTimeout(transporter, mailOptions, timeoutMs = 5000) {
  */
 async function sendWelcomeEmail({ email, name, targetRole }) {
   try {
-    const { transporter } = await createTransporter();
-    const senderEmail = process.env.SMTP_USER || 'pranavmahe6@gmail.com';
-    const fromAddress = `"PlaceMate AI" <${senderEmail}>`;
     const roleText = targetRole ? ` as a ${targetRole}` : '';
-
     const subject = `Welcome to PlaceMate AI - Account Registration Confirmed`;
 
     const htmlContent = `
@@ -149,6 +190,15 @@ Best regards,
 The PlaceMate AI Team
     `;
 
+    if (process.env.RESEND_API_KEY) {
+      const resendRes = await sendEmailViaResend({ to: email, subject, html: htmlContent, text: textContent });
+      if (resendRes && resendRes.success) return resendRes;
+    }
+
+    const { transporter } = await createTransporter();
+    const senderEmail = process.env.SMTP_USER || 'pranavmahe6@gmail.com';
+    const fromAddress = `"PlaceMate AI" <${senderEmail}>`;
+
     const mailOptions = {
       from: fromAddress,
       replyTo: senderEmail,
@@ -166,7 +216,7 @@ The PlaceMate AI Team
       },
     };
 
-    const info = await sendMailWithTimeout(transporter, mailOptions, 12000);
+    const info = await sendMailWithTimeout(transporter, mailOptions, 5000);
     console.log(`[PlaceMate AI Email] Welcome email dispatched to ${email}:`, info.messageId || info);
     return { success: true, messageId: info.messageId };
 
@@ -181,6 +231,11 @@ The PlaceMate AI Team
  */
 async function sendLoginNotificationEmail({ email, name }) {
   try {
+    if (process.env.RESEND_API_KEY) {
+      const resendRes = await sendEmailViaResend({ to: email, subject, html: htmlContent, text: textContent });
+      if (resendRes && resendRes.success) return resendRes;
+    }
+
     const { transporter } = await createTransporter();
     const senderEmail = process.env.SMTP_USER || 'pranavmahe6@gmail.com';
     const fromAddress = `"PlaceMate AI" <${senderEmail}>`;
@@ -282,6 +337,11 @@ async function sendOtpEmail({ email, name, otp }) {
   console.log(`==================================================\n`);
 
   try {
+    if (process.env.RESEND_API_KEY) {
+      const resendRes = await sendEmailViaResend({ to: email, subject, html: htmlContent, text: textContent });
+      if (resendRes && resendRes.success) return { success: true, messageId: resendRes.messageId, otp };
+    }
+
     const { transporter } = await createTransporter();
     const senderEmail = process.env.SMTP_USER || 'pranavmahe6@gmail.com';
     const fromAddress = `"PlaceMate AI Verification" <${senderEmail}>`;
@@ -383,6 +443,11 @@ async function sendPasswordResetEmail({ email, name, otp }) {
   console.log(`==================================================\n`);
 
   try {
+    if (process.env.RESEND_API_KEY) {
+      const resendRes = await sendEmailViaResend({ to: email, subject, html: htmlContent, text: textContent });
+      if (resendRes && resendRes.success) return { success: true, messageId: resendRes.messageId, otp };
+    }
+
     const { transporter } = await createTransporter();
     const senderEmail = process.env.SMTP_USER || 'pranavmahe6@gmail.com';
     const fromAddress = `"PlaceMate AI Security" <${senderEmail}>`;
