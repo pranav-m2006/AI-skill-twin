@@ -283,10 +283,10 @@ async function login(req, res, next) {
     const normalizedEmail = email.trim().toLowerCase();
 
     const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
-    if (!user) return res.status(401).json({ error: 'Invalid email or password' });
+    if (!user) return res.status(401).json({ error: 'No account found with this email address. Please sign up first.' });
 
     const valid = await bcrypt.compare(password, user.passwordHash);
-    if (!valid) return res.status(401).json({ error: 'Invalid email or password' });
+    if (!valid) return res.status(401).json({ error: 'Incorrect password. Please check your password or use Forgot Password.' });
 
     // Send login notification email asynchronously (non-blocking)
     sendLoginNotificationEmail({
