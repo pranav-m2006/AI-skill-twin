@@ -109,7 +109,6 @@ async function createTransporter() {
         auth: { user, pass },
         tls: {
           rejectUnauthorized: false,
-          ciphers: 'SSLv3',
         },
         connectionTimeout: 15000,
         greetingTimeout: 15000,
