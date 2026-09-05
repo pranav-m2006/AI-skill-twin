@@ -69,6 +69,19 @@ export function RoadmapProvider({ children }) {
     fetchMyRoadmaps();
   }, [fetchMyRoadmaps]);
 
+  const toggleTaskCompletion = useCallback(async (taskId, isCompleted) => {
+    try {
+      const { data } = await api.post(`/roadmap/task/${taskId}/complete`, { isCompleted });
+      if (activeRoadmapId) {
+        await selectRoadmap(activeRoadmapId);
+      }
+      return data;
+    } catch (e) {
+      console.warn('Failed to toggle task completion:', e);
+      return null;
+    }
+  }, [activeRoadmapId, selectRoadmap]);
+
   return (
     <RoadmapContext.Provider
       value={{
@@ -78,6 +91,7 @@ export function RoadmapProvider({ children }) {
         setActiveRoadmap,
         activeRoadmapId,
         selectRoadmap,
+        toggleTaskCompletion,
         fetchMyRoadmaps,
         loading,
       }}

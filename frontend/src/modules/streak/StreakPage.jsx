@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
 import {
   Flame, Shield, TrendingUp, Award, CheckCircle, Clock, Zap, Target,
-  Calendar, ChevronRight, Lock, Check, Sparkles, AlertCircle, RefreshCw, Compass, MapPin,
+  Lock, Check, Sparkles, Compass, Loader2,
 } from 'lucide-react';
 import api from '../../shared/api';
 import Card from '../../shared/components/Card';
 import Badge from '../../shared/components/Badge';
-import Button from '../../shared/components/Button';
 import ActivityChart from '../../shared/charts/ActivityChart';
 import AdherenceHeatmap from '../../shared/charts/AdherenceHeatmap';
 import { useRoadmap } from '../../contexts/RoadmapContext';
@@ -101,76 +100,12 @@ function StreakCounter({ current, longest, label = 'Current Day Streak', freezeS
   );
 }
 
-// ─── Calculate Streak for a specific Roadmap ──────────────────────────────────
-function calculateRoadmapStreak(roadmap, globalStreak = 0) {
-  if (!roadmap || !roadmap.phases) {
-    return { streak: globalStreak, maxStreak: globalStreak, completedDays: 0, totalDays: 0, todayTasks: [] };
-  }
-
-  const allDays = [];
-  roadmap.phases.forEach(ph => {
-    (ph.weeks || []).forEach(wk => {
-      (wk.days || []).forEach(d => {
-        allDays.push(d);
-      });
-    });
-  });
-
-  allDays.sort((a, b) => a.dayNumber - b.dayNumber);
-
-  let tempStreak = 0;
-  let maxStreak = 0;
-  let completedDays = 0;
-
-  allDays.forEach(d => {
-    const isDone = d.status === 'COMPLETED' || d.completionPct >= 70;
-    if (isDone) {
-      tempStreak++;
-      completedDays++;
-      if (tempStreak > maxStreak) maxStreak = tempStreak;
-    } else {
-      tempStreak = 0;
-    }
-  });
-
-  let effectiveStreak = maxStreak;
-  if (effectiveStreak === 0 && completedDays > 0) {
-    effectiveStreak = completedDays;
-  }
-  if (effectiveStreak === 0 && globalStreak > 0) {
-    effectiveStreak = Math.min(globalStreak, Math.max(1, completedDays));
-  }
-
-  let effectiveMaxStreak = Math.max(maxStreak, effectiveStreak, globalStreak);
-
-  const todayDay = allDays.find(d => d.status === 'IN_PROGRESS') ||
-                   allDays.find(d => d.status === 'PENDING') ||
-                   allDays[allDays.length - 1];
-
-  const todayTasks = todayDay ? (todayDay.tasks || []).map(t => ({
-    id: t.id,
-    title: t.title,
-    type: t.type,
-    description: t.description,
-    isCompleted: t.isCompleted || todayDay.status === 'COMPLETED',
-  })) : [];
-
-  return {
-    streak: effectiveStreak,
-    maxStreak: effectiveMaxStreak,
-    completedDays,
-    totalDays: allDays.length,
-    todayDay,
-    todayTasks,
-  };
-}
-
 export default function StreakPage() {
-  const { roadmaps, activeRoadmapId, selectRoadmap } = useRoadmap();
+  const { roadmaps, activeRoadmapId, selectRoadmap, toggleTaskCompletion } = useRoadmap();
   const [data, setData]                     = useState(null);
   const [dailyActivity, setDailyActivity]   = useState([]);
-  const [weeklyActivity, setWeeklyActivity] = useState([]);
   const [loading, setLoading]               = useState(true);
+  const [togglingTaskId, setTogglingTaskId] = useState(null);
   const [calYear, setCalYear]               = useState(new Date().getFullYear());
   const [calMonth, setCalMonth]             = useState(new Date().getMonth() + 1);
   const [calDays, setCalDays]               = useState([]);
@@ -187,14 +122,12 @@ export default function StreakPage() {
     setLoading(true);
     try {
       const q = rmId && rmId !== 'all' ? `roadmapId=${rmId}` : '';
-      const [streakRes, actRes, wkRes] = await Promise.all([
+      const [streakRes, actRes] = await Promise.all([
         api.get(`/streak${q ? '?' + q : ''}`),
         api.get(`/progress/daily?days=14${q ? '&' + q : ''}`),
-        api.get(`/progress/weekly?weeks=8${q ? '&' + q : ''}`),
       ]);
       setData(streakRes.data);
       setDailyActivity(actRes.data || []);
-      setWeeklyActivity(wkRes.data || []);
     } catch (e) {
       console.warn('Failed to load streak data:', e);
     } finally {
@@ -220,7 +153,21 @@ export default function StreakPage() {
     }
   };
 
-  if (loading) {
+  const handleToggleTask = async (task) => {
+    if (!task || !task.id || togglingTaskId) return;
+    setTogglingTaskId(task.id);
+    try {
+      await toggleTaskCompletion(task.id, !task.isCompleted);
+      await fetchStreakData(activeRoadmapId);
+      await fetchCalendarData(calYear, calMonth, activeRoadmapId);
+    } catch (err) {
+      console.error('Failed to toggle task:', err);
+    } finally {
+      setTogglingTaskId(null);
+    }
+  };
+
+  if (loading && !data) {
     return (
       <div className="flex items-center justify-center py-24">
         <div className="w-8 h-8 rounded-full border-2 border-accent-amber border-t-transparent animate-spin" />
@@ -228,41 +175,30 @@ export default function StreakPage() {
     );
   }
 
-  const globalStreakVal = data?.currentStreak || 0;
-  const globalLongestVal = data?.longestStreak || 0;
-
-  // Selected Roadmap context vs Global
   const selectedRoadmapId = activeRoadmapId || 'all';
-  const activeRoadmap = selectedRoadmapId !== 'all'
-    ? roadmaps.find(r => String(r.id) === String(selectedRoadmapId))
-    : null;
 
-  const rmMetrics = activeRoadmap ? calculateRoadmapStreak(activeRoadmap, globalStreakVal) : null;
+  const currentStreak = data?.currentStreak || 0;
+  const longestStreak = data?.longestStreak || 0;
+  const domainName    = data?.roadmapDomain || (selectedRoadmapId !== 'all' ? 'Roadmap' : 'Overall');
 
-  const currentStreak = activeRoadmap
-    ? rmMetrics.streak
-    : globalStreakVal;
-
-  const longestStreak = activeRoadmap
-    ? rmMetrics.maxStreak
-    : globalLongestVal;
-
-  const counterLabel = activeRoadmap
-    ? `${activeRoadmap.domain} Streak`
+  const counterLabel  = selectedRoadmapId !== 'all'
+    ? `${domainName} Streak`
     : 'Overall Global Streak';
 
-  // Automated Read-Only Daily Targets from Roadmap
-  const rawDailyTargets = activeRoadmap && rmMetrics.todayTasks.length > 0
-    ? rmMetrics.todayTasks
+  // Dynamic Daily Targets directly from DB
+  const rawDailyTargets = (data?.todayTasks && data.todayTasks.length > 0)
+    ? data.todayTasks
     : [
-        { id: 1, title: 'Learn: Core Concepts & Practice', isCompleted: currentStreak > 0 },
-        { id: 2, title: 'Practice: Coding & Exercises', isCompleted: currentStreak > 0 },
-        { id: 3, title: 'Aptitude: Timed Quiz', isCompleted: false },
-        { id: 4, title: 'Revision: Notes & Flashcards', isCompleted: currentStreak > 0 },
+        { id: 101, title: `Study: ${domainName} Core Concepts`, type: 'LEARN', isCompleted: currentStreak > 0 },
+        { id: 102, title: `Practice: ${domainName} Coding Problems`, type: 'PRACTICE', isCompleted: currentStreak > 0 },
+        { id: 103, title: 'Aptitude: Timed Quiz & Reasoning', type: 'APTITUDE', isCompleted: false },
+        { id: 104, title: 'Revision: Key Notes & Flashcards', type: 'REVISION', isCompleted: currentStreak > 0 },
       ];
 
   const completedTargetsCount = rawDailyTargets.filter(t => t.isCompleted).length;
-  const targetPct = Math.round((completedTargetsCount / rawDailyTargets.length) * 100);
+  const targetPct = rawDailyTargets.length > 0
+    ? Math.round((completedTargetsCount / rawDailyTargets.length) * 100)
+    : 0;
 
   const badges = data?.badges || [];
   const earnedBadges = badges.filter(b => b.earnedAt);
@@ -277,7 +213,7 @@ export default function StreakPage() {
             Streak &amp; Activity Hub
           </h2>
           <p className="text-[12px] text-muted mt-0.5">
-            Switch between your roadmaps to track per-roadmap streak counts and view auto-synced daily targets.
+            Track your per-roadmap streak counts, complete daily targets, and unlock achievements.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -308,11 +244,10 @@ export default function StreakPage() {
             }`}
           >
             <GlobeIcon size={12} />
-            Overall Global Streak ({globalStreakVal}d)
+            Overall Global Streak ({currentStreak}d)
           </button>
 
           {roadmaps.map(rm => {
-            const m = calculateRoadmapStreak(rm, globalStreakVal);
             const isSelected = String(rm.id) === String(selectedRoadmapId);
             return (
               <button
@@ -324,8 +259,8 @@ export default function StreakPage() {
                     : 'bg-card text-muted hover:text-text border border-border'
                 }`}
               >
-                <Flame size={12} className={m.streak > 0 ? 'text-accent-amber' : ''} />
-                {rm.domain} Roadmap ({m.streak}d streak)
+                <Flame size={12} className={isSelected && currentStreak > 0 ? 'text-accent-amber' : ''} />
+                {rm.domain} Roadmap
               </button>
             );
           })}
@@ -334,7 +269,7 @@ export default function StreakPage() {
 
       {/* Main Grid: Streak Counter + Insights */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column: Counter + Freeze Shield + Auto Daily Targets */}
+        {/* Left Column: Counter + Freeze Shield + Interactive Daily Targets */}
         <div className="space-y-4">
           <StreakCounter
             current={currentStreak}
@@ -363,7 +298,7 @@ export default function StreakPage() {
             </div>
           </Card>
 
-          {/* Automated Read-Only Daily Goal Checklist */}
+          {/* Interactive Daily Goal Checklist */}
           <Card className="p-4 space-y-3" id="daily-goals-checklist">
             <div className="flex items-center justify-between border-b border-border pb-2.5">
               <div>
@@ -371,8 +306,8 @@ export default function StreakPage() {
                   <Target size={15} className="text-accent-blue" />
                   Today's Daily Targets
                 </h3>
-                <p className="text-[10px] text-accent-blue font-semibold mt-0.5 flex items-center gap-1">
-                  <Zap size={10} /> Auto-Synced with {activeRoadmap ? `${activeRoadmap.domain} Roadmap` : 'Active Plan'}
+                <p className="text-[10.5px] text-accent-blue font-semibold mt-0.5 flex items-center gap-1">
+                  <Zap size={10} /> {data?.todayTopic ? `Day ${data.todayDayNumber}: ${data.todayTopic}` : `${domainName} Plan`}
                 </p>
               </div>
               <span className="text-[11px] font-bold text-accent-blue bg-accent-blue/10 px-2.5 py-1 rounded-full">
@@ -388,40 +323,50 @@ export default function StreakPage() {
             </div>
 
             <div className="space-y-2 pt-1">
-              {rawDailyTargets.map((t, index) => (
-                <div
-                  key={t.id || index}
-                  className={`flex items-center gap-3 p-2.5 rounded-xl border transition-all ${
-                    t.isCompleted
-                      ? 'bg-accent-green/10 border-accent-green/30 text-text'
-                      : 'bg-surface border-border text-muted opacity-80'
-                  }`}
-                >
-                  <div
-                    className={`w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 transition-colors ${
-                      t.isCompleted ? 'bg-accent-green text-white' : 'border border-border bg-card'
+              {rawDailyTargets.map((t, index) => {
+                const isUpdating = togglingTaskId === t.id;
+                return (
+                  <button
+                    key={t.id || index}
+                    type="button"
+                    onClick={() => handleToggleTask(t)}
+                    disabled={isUpdating}
+                    className={`w-full text-left flex items-center gap-3 p-2.5 rounded-xl border transition-all cursor-pointer hover:border-accent-blue/50 ${
+                      t.isCompleted
+                        ? 'bg-accent-green/10 border-accent-green/30 text-text'
+                        : 'bg-surface border-border text-muted hover:text-text'
                     }`}
                   >
-                    {t.isCompleted && <Check size={13} />}
-                  </div>
-                  <span className={`text-[12px] flex-1 ${t.isCompleted ? 'line-through opacity-85 font-medium' : ''}`}>
-                    {t.title}
-                  </span>
-                  {t.isCompleted ? (
-                    <span className="text-[10px] font-bold text-accent-green bg-accent-green/15 px-2 py-0.5 rounded flex items-center gap-1">
-                      <CheckCircle size={10} /> Auto-Done
+                    <div
+                      className={`w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 transition-colors ${
+                        t.isCompleted ? 'bg-accent-green text-white' : 'border border-border bg-card'
+                      }`}
+                    >
+                      {isUpdating ? (
+                        <Loader2 size={12} className="animate-spin text-accent-blue" />
+                      ) : (
+                        t.isCompleted && <Check size={13} />
+                      )}
+                    </div>
+                    <span className={`text-[12px] flex-1 ${t.isCompleted ? 'line-through opacity-85 font-medium' : 'font-medium'}`}>
+                      {t.title}
                     </span>
-                  ) : (
-                    <span className="text-[10px] font-semibold text-muted bg-card px-1.5 py-0.5 rounded border border-border">
-                      Pending in Roadmap
-                    </span>
-                  )}
-                </div>
-              ))}
+                    {t.isCompleted ? (
+                      <span className="text-[10px] font-bold text-accent-green bg-accent-green/15 px-2 py-0.5 rounded flex items-center gap-1">
+                        <CheckCircle size={10} /> Completed
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-semibold text-accent-blue bg-accent-blue/10 px-1.5 py-0.5 rounded">
+                        Click to Complete
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
 
             <p className="text-[10px] text-muted italic text-center pt-1">
-              🔒 Targets auto-complete as you study and finish tasks in your Roadmap!
+              💡 Click any target checkbox to mark completion &amp; update your streak!
             </p>
           </Card>
         </div>
@@ -433,30 +378,28 @@ export default function StreakPage() {
             <Card className="p-4 text-center">
               <Clock size={18} className="mx-auto text-accent-blue mb-1" />
               <p className="text-[20px] font-bold text-text leading-none">
-                {data?.studyHours !== undefined ? `${data.studyHours}h` : (activeRoadmap ? `${+(rmMetrics.completedDays * 2).toFixed(1)}h` : '0h')}
+                {data?.studyHours !== undefined ? `${data.studyHours}h` : '0h'}
               </p>
               <p className="text-[11px] text-muted mt-0.5">Study Time</p>
             </Card>
             <Card className="p-4 text-center">
               <CheckCircle size={18} className="mx-auto text-accent-green mb-1" />
               <p className="text-[20px] font-bold text-text leading-none">
-                {activeRoadmap ? `${rmMetrics.completedDays} / ${rmMetrics.totalDays}` : (data?.totalCompletedDays !== undefined ? `${data.totalCompletedDays}` : '0')}
+                {data?.totalCompletedDays !== undefined ? `${data.totalCompletedDays} / ${data.totalDays || 30}` : '0 / 30'}
               </p>
-              <p className="text-[11px] text-muted mt-0.5">
-                {activeRoadmap ? 'Days Completed' : 'Total Days Done'}
-              </p>
+              <p className="text-[11px] text-muted mt-0.5">Days Completed</p>
             </Card>
             <Card className="p-4 text-center">
               <TrendingUp size={18} className="mx-auto text-accent-purple mb-1" />
               <p className="text-[20px] font-bold text-text leading-none">
-                {data?.totalXp !== undefined ? data.totalXp.toLocaleString() : (activeRoadmap ? (rmMetrics.completedDays * 50).toLocaleString() : '0')}
+                {data?.totalXp !== undefined ? data.totalXp.toLocaleString() : '0'}
               </p>
               <p className="text-[11px] text-muted mt-0.5">Total XP</p>
             </Card>
             <Card className="p-4 text-center">
               <Zap size={18} className="mx-auto text-accent-amber mb-1" />
               <p className="text-[20px] font-bold text-text leading-none">
-                {data?.completionPct !== undefined ? `${data.completionPct}%` : (activeRoadmap ? `${Math.round((rmMetrics.completedDays / (rmMetrics.totalDays || 1)) * 100)}%` : '0%')}
+                {data?.completionPct !== undefined ? `${data.completionPct}%` : '0%'}
               </p>
               <p className="text-[11px] text-muted mt-0.5">Completion</p>
             </Card>
@@ -471,11 +414,11 @@ export default function StreakPage() {
                   Roadmap Learning Velocity &amp; Streak Markings Graph
                 </h3>
                 <p className="text-[11px] text-muted mt-0.5">
-                  Tracks daily study hours (bars) and streak task completion markings (green line) per selected roadmap.
+                  Tracks daily study hours (bars) and streak task completion markings (green line) for {domainName}.
                 </p>
               </div>
               <Badge color="blue" size="xs">
-                {activeRoadmap ? `${activeRoadmap.domain} Roadmap` : 'Overall Profile'}
+                {domainName} Roadmap
               </Badge>
             </div>
 

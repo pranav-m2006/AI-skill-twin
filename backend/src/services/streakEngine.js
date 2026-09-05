@@ -159,10 +159,11 @@ async function _updateStreak(userId, date) {
 async function getStreakMetrics(userId, roadmapId = null) {
   const globalStreak = await prisma.streakLog.findUnique({ where: { userId } });
 
-  // If a specific roadmap is requested, compute metrics tailored to that roadmap
+  let targetRoadmap = null;
+
   if (roadmapId && roadmapId !== 'all') {
     const rmId = parseInt(roadmapId, 10);
-    const roadmap = await prisma.roadmap.findUnique({
+    targetRoadmap = await prisma.roadmap.findUnique({
       where: { id: rmId },
       include: {
         phases: {
@@ -179,94 +180,137 @@ async function getStreakMetrics(userId, roadmapId = null) {
         },
       },
     });
-
-    if (roadmap && roadmap.userId === userId) {
-      const allDays = [];
-      for (const phase of roadmap.phases) {
-        for (const week of phase.weeks) {
-          for (const day of week.days) {
-            allDays.push(day);
-          }
-        }
-      }
-
-      allDays.sort((a, b) => a.dayNumber - b.dayNumber);
-
-      let completedDaysCount = 0;
-      let totalTasksCount = 0;
-      let completedTasksCount = 0;
-      let tempStreak = 0;
-      let maxStreak = 0;
-
-      allDays.forEach(d => {
-        const isDone = d.status === 'COMPLETED' || d.completionPct >= 70;
-        if (isDone) {
-          completedDaysCount++;
-          tempStreak++;
-          if (tempStreak > maxStreak) maxStreak = tempStreak;
-        } else {
-          tempStreak = 0;
-        }
-
-        const dayTasks = d.tasks || [];
-        totalTasksCount += dayTasks.length;
-        completedTasksCount += dayTasks.filter(t => t.isCompleted).length;
-      });
-
-      const totalDays = allDays.length || 30;
-      const currentStreak = maxStreak > 0 ? maxStreak : (completedDaysCount > 0 ? completedDaysCount : (globalStreak?.currentStreak || 0));
-      const longestStreak = Math.max(maxStreak, currentStreak, globalStreak?.longestStreak || 0);
-
-      const studyHours = +((completedDaysCount * (roadmap.dailyHours || 2)) + (completedTasksCount * 0.25)).toFixed(1);
-      const totalXp = completedDaysCount * 50 + completedTasksCount * 10;
-      const completionPct = totalDays > 0 ? Math.round((completedDaysCount / totalDays) * 100) : 0;
-
-      return {
-        roadmapId: rmId,
-        roadmapDomain: roadmap.domain,
-        currentStreak,
-        longestStreak,
-        lastCompletedDate: globalStreak?.lastCompletedDate || null,
-        totalCompletedDays: completedDaysCount,
-        totalMissedDays: globalStreak?.totalMissedDays || 0,
-        totalActiveDays: completedDaysCount || globalStreak?.totalActiveDays || 0,
-        studyHours,
-        totalXp,
-        completionPct,
-        totalDays,
-        completedTasks: completedTasksCount,
-        totalTasks: totalTasksCount,
-      };
-    }
+  } else {
+    // Pick active roadmap or most recent roadmap for global daily targets
+    targetRoadmap = await prisma.roadmap.findFirst({
+      where: { userId, status: 'ACTIVE' },
+      orderBy: { updatedAt: 'desc' },
+      include: {
+        phases: {
+          include: {
+            weeks: {
+              include: {
+                days: {
+                  include: { tasks: true },
+                  orderBy: { dayNumber: 'asc' },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
   }
 
-  // Default global metrics across all roadmaps
-  if (!globalStreak) {
-    return {
-      currentStreak: 0,
-      longestStreak: 0,
-      lastCompletedDate: null,
-      totalCompletedDays: 0,
-      totalMissedDays: 0,
-      totalActiveDays: 0,
-      studyHours: 0,
-      totalXp: 0,
-      completionPct: 0,
-      totalDays: 30,
+  let roadmapMetrics = null;
+  if (targetRoadmap && targetRoadmap.userId === userId) {
+    const allDays = [];
+    for (const phase of targetRoadmap.phases) {
+      for (const week of phase.weeks) {
+        for (const day of week.days) {
+          allDays.push(day);
+        }
+      }
+    }
+
+    allDays.sort((a, b) => a.dayNumber - b.dayNumber);
+
+    let completedDaysCount = 0;
+    let totalTasksCount = 0;
+    let completedTasksCount = 0;
+    let tempStreak = 0;
+    let maxStreak = 0;
+
+    allDays.forEach(d => {
+      const isDone = d.status === 'COMPLETED' || d.completionPct >= 70;
+      if (isDone) {
+        completedDaysCount++;
+        tempStreak++;
+        if (tempStreak > maxStreak) maxStreak = tempStreak;
+      } else {
+        tempStreak = 0;
+      }
+
+      const dayTasks = d.tasks || [];
+      totalTasksCount += dayTasks.length;
+      completedTasksCount += dayTasks.filter(t => t.isCompleted).length;
+    });
+
+    // Find today's active day (first in-progress or pending day, or last day)
+    const todayDay = allDays.find(d => d.status === 'IN_PROGRESS') ||
+                     allDays.find(d => d.status === 'PENDING') ||
+                     allDays[allDays.length - 1];
+
+    const todayTasks = todayDay ? (todayDay.tasks || []).map(t => ({
+      id: t.id,
+      dayId: t.dayId,
+      title: t.title,
+      type: t.type,
+      description: t.description,
+      isCompleted: t.isCompleted || todayDay.status === 'COMPLETED',
+    })) : [];
+
+    const todayDoneCount = todayTasks.filter(t => t.isCompleted).length;
+    const todayCompletionPct = todayTasks.length > 0 ? Math.round((todayDoneCount / todayTasks.length) * 100) : 0;
+
+    const totalDays = allDays.length || 30;
+    const currentStreak = maxStreak > 0 ? maxStreak : (completedDaysCount > 0 ? completedDaysCount : (globalStreak?.currentStreak || 0));
+    const longestStreak = Math.max(maxStreak, currentStreak, globalStreak?.longestStreak || 0);
+
+    const studyHours = +((completedDaysCount * (targetRoadmap.dailyHours || 2)) + (completedTasksCount * 0.25)).toFixed(1);
+    const totalXp = completedDaysCount * 50 + completedTasksCount * 10;
+    const completionPct = totalDays > 0 ? Math.round((completedDaysCount / totalDays) * 100) : 0;
+
+    roadmapMetrics = {
+      roadmapId: targetRoadmap.id,
+      roadmapDomain: targetRoadmap.domain,
+      currentStreak,
+      longestStreak,
+      totalCompletedDays: completedDaysCount,
+      totalActiveDays: completedDaysCount || globalStreak?.totalActiveDays || 0,
+      studyHours,
+      totalXp,
+      completionPct,
+      totalDays,
+      completedTasks: completedTasksCount,
+      totalTasks: totalTasksCount,
+      todayDayNumber: todayDay ? todayDay.dayNumber : 1,
+      todayTopic: todayDay ? todayDay.topic : 'Study & Practice',
+      todayTasks,
+      todayCompletionPct,
     };
   }
 
+  // If specific roadmap was requested and found, return its metrics
+  if (roadmapId && roadmapId !== 'all' && roadmapMetrics) {
+    return {
+      ...roadmapMetrics,
+      lastCompletedDate: globalStreak?.lastCompletedDate || null,
+      totalMissedDays: globalStreak?.totalMissedDays || 0,
+    };
+  }
+
+  // Otherwise return global metrics merged with active roadmap's daily targets
+  const currentStreak = globalStreak?.currentStreak || (roadmapMetrics?.currentStreak || 0);
+  const longestStreak = globalStreak?.longestStreak || (roadmapMetrics?.longestStreak || 0);
+
   return {
-    currentStreak: globalStreak.currentStreak,
-    longestStreak: globalStreak.longestStreak,
-    lastCompletedDate: globalStreak.lastCompletedDate,
-    totalCompletedDays: globalStreak.totalCompletedDays,
-    totalMissedDays: globalStreak.totalMissedDays,
-    totalActiveDays: globalStreak.totalActiveDays,
-    studyHours: +(globalStreak.totalCompletedDays * 1.5).toFixed(1),
-    totalXp: globalStreak.totalCompletedDays * 50,
-    completionPct: globalStreak.totalCompletedDays > 0 ? Math.min(100, globalStreak.totalCompletedDays * 3) : 0,
-    totalDays: 30,
+    currentStreak,
+    longestStreak,
+    lastCompletedDate: globalStreak?.lastCompletedDate || null,
+    totalCompletedDays: globalStreak?.totalCompletedDays || (roadmapMetrics?.totalCompletedDays || 0),
+    totalMissedDays: globalStreak?.totalMissedDays || 0,
+    totalActiveDays: globalStreak?.totalActiveDays || (roadmapMetrics?.totalCompletedDays || 0),
+    studyHours: roadmapMetrics?.studyHours || +( (globalStreak?.totalCompletedDays || 0) * 1.5 ).toFixed(1),
+    totalXp: (globalStreak?.totalCompletedDays || 0) * 50 + (roadmapMetrics?.completedTasks || 0) * 10,
+    completionPct: roadmapMetrics?.completionPct || (globalStreak?.totalCompletedDays ? Math.min(100, globalStreak.totalCompletedDays * 3) : 0),
+    totalDays: roadmapMetrics?.totalDays || 30,
+    roadmapId: roadmapMetrics?.roadmapId || null,
+    roadmapDomain: roadmapMetrics?.roadmapDomain || 'Global',
+    todayDayNumber: roadmapMetrics?.todayDayNumber || 1,
+    todayTopic: roadmapMetrics?.todayTopic || 'Daily Targets',
+    todayTasks: roadmapMetrics?.todayTasks || [],
+    todayCompletionPct: roadmapMetrics?.todayCompletionPct || 0,
   };
 }
 

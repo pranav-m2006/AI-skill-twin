@@ -116,36 +116,51 @@ async function markDayComplete(req, res, next) {
 
 async function markTaskComplete(req, res, next) {
   try {
-    const taskId = parseInt(req.params.taskId);
-    const task = await prisma.dayTask.update({
+    const taskId = parseInt(req.params.taskId, 10);
+    const existingTask = await prisma.dayTask.findUnique({
       where: { id: taskId },
-      data: { isCompleted: true, completedAt: new Date() },
       include: { day: { include: { week: { include: { phase: { include: { roadmap: true } } } } } } },
     });
 
-    if (task.day.week.phase.roadmap.userId !== req.user.id) {
-      return res.status(403).json({ error: 'Unauthorised' });
+    if (!existingTask || existingTask.day.week.phase.roadmap.userId !== req.user.id) {
+      return res.status(404).json({ error: 'Task not found or unauthorized' });
     }
+
+    const newCompleted = req.body.isCompleted !== undefined ? Boolean(req.body.isCompleted) : !existingTask.isCompleted;
+
+    const task = await prisma.dayTask.update({
+      where: { id: taskId },
+      data: {
+        isCompleted: newCompleted,
+        completedAt: newCompleted ? new Date() : null,
+      },
+    });
 
     // Recompute day completion pct
     const allTasks = await prisma.dayTask.findMany({ where: { dayId: task.dayId } });
     const completedCount = allTasks.filter(t => t.isCompleted).length;
-    const pct = Math.round((completedCount / allTasks.length) * 100);
+    const pct = allTasks.length > 0 ? Math.round((completedCount / allTasks.length) * 100) : 0;
+    const newDayStatus = pct >= 100 ? 'COMPLETED' : (pct >= 30 ? 'IN_PROGRESS' : 'PENDING');
 
     await prisma.roadmapDay.update({
       where: { id: task.dayId },
-      data: { completionPct: pct, status: pct >= 70 ? 'IN_PROGRESS' : 'PENDING' },
+      data: {
+        completionPct: pct,
+        status: newDayStatus,
+        completedAt: newDayStatus === 'COMPLETED' ? new Date() : null,
+      },
     });
 
-    // Update daily activity (partial signal)
+    // Update daily activity and streak
     await updateDailyActivity(req.user.id, {
       tasksCompleted: completedCount,
       tasksTotal: allTasks.length,
-      studyMinutes: 30, // partial time credit per task
-      xpEarned: 10,
+      studyMinutes: newCompleted ? 20 : 0,
+      xpEarned: newCompleted ? 10 : 0,
+      roadmapTopic: existingTask.day.topic,
     });
 
-    res.json({ task, dayCompletionPct: pct });
+    res.json({ task, dayCompletionPct: pct, dayStatus: newDayStatus });
   } catch (err) { next(err); }
 }
 
