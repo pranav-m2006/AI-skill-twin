@@ -149,9 +149,10 @@ Focus areas: placement strategy, technical interview prep, DSA roadmaps, career 
   ];
 
   const candidateModels = [
-    llm.groqModel || 'groq/compound',
-    'openai/gpt-oss-120b',
-    'qwen/qwen3.6-27b',
+    'llama-3.3-70b-versatile',
+    'llama-3.1-8b-instant',
+    'mixtral-8x7b-32768',
+    'gemma2-9b-it',
   ];
 
   let lastError = null;

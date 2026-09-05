@@ -1,5 +1,23 @@
 import { useState, useEffect, useRef } from 'react';
-import { Bot, X, Send, Sparkles, User, MessageSquare } from 'lucide-react';
+import {
+  Bot,
+  X,
+  Send,
+  Sparkles,
+  User,
+  MessageSquare,
+  Copy,
+  Check,
+  RotateCcw,
+  Volume2,
+  VolumeX,
+  ThumbsUp,
+  ThumbsDown,
+  Maximize2,
+  Minimize2,
+  Trash2,
+  Code2,
+} from 'lucide-react';
 import api from '../api';
 
 const QUICK_CHIPS = [
@@ -10,8 +28,39 @@ const QUICK_CHIPS = [
   'How do I earn badges?',
 ];
 
+// ─── Code Block Renderer with Copy Button ────────────────────────────────────
+function CodeBlock({ code, language = 'javascript' }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="my-2 rounded-xl border border-border bg-[#0d1117] overflow-hidden text-[11px] font-mono shadow-sm">
+      <div className="flex items-center justify-between px-3 py-1.5 bg-[#161b22] border-b border-border/40 text-muted">
+        <span className="flex items-center gap-1.5 text-[10.5px] font-medium text-accent-blue">
+          <Code2 size={13} /> {language}
+        </span>
+        <button
+          onClick={handleCopy}
+          className="flex items-center gap-1 text-[10px] text-muted hover:text-text hover:bg-card px-2 py-0.5 rounded transition-colors"
+          title="Copy code"
+        >
+          {copied ? <Check size={12} className="text-accent-green" /> : <Copy size={12} />}
+          {copied ? 'Copied' : 'Copy code'}
+        </button>
+      </div>
+      <pre className="p-3 overflow-x-auto text-accent-green leading-relaxed">
+        <code>{code}</code>
+      </pre>
+    </div>
+  );
+}
+
 // ─── Professional Message Renderer ──────────────────────────────────────────
-// Parses markdown-like syntax into structured, readable React elements.
 function MessageRenderer({ content }) {
   if (!content) return null;
 
@@ -22,9 +71,25 @@ function MessageRenderer({ content }) {
   while (i < lines.length) {
     const line = lines[i];
 
-    // Skip blank lines (but add spacing)
     if (line.trim() === '') {
       i++;
+      continue;
+    }
+
+    // --- Fenced Code Block ``` ---
+    if (line.trim().startsWith('```')) {
+      const langMatch = line.trim().match(/^```(\w+)?/);
+      const lang = langMatch ? langMatch[1] || 'code' : 'code';
+      const codeLines = [];
+      i++;
+      while (i < lines.length && !lines[i].trim().startsWith('```')) {
+        codeLines.push(lines[i]);
+        i++;
+      }
+      i++; // skip closing ```
+      elements.push(
+        <CodeBlock key={`code-${i}`} code={codeLines.join('\n')} language={lang} />
+      );
       continue;
     }
 
@@ -34,7 +99,7 @@ function MessageRenderer({ content }) {
       elements.push(
         <div
           key={i}
-          className="border-l-2 border-accent-blue/60 pl-2.5 my-1.5 text-[11px] text-muted italic"
+          className="border-l-2 border-accent-blue/60 pl-2.5 my-1.5 text-[11px] text-muted italic bg-surface/40 py-1 rounded-r-md"
         >
           <InlineText text={text} />
         </div>
@@ -147,7 +212,7 @@ function MessageRenderer({ content }) {
       continue;
     }
 
-    // --- Code block: `code` alone on a line ---
+    // --- Inline Code: `code` alone on a line ---
     if (/^`.+`$/.test(line.trim())) {
       const code = line.trim().replace(/^`|`$/g, '');
       elements.push(
@@ -174,7 +239,6 @@ function MessageRenderer({ content }) {
 // Renders inline markdown: **bold**, `code`
 function InlineText({ text }) {
   const parts = [];
-  // Split on **bold** and `code`
   const regex = /(\*\*.+?\*\*|`.+?`)/g;
   let last = 0;
   let match;
@@ -207,26 +271,161 @@ function InlineText({ text }) {
 
   return <>{parts}</>;
 }
-// ─────────────────────────────────────────────────────────────────────────────
 
+// ─── Assistant Interactive Message Component (Typewriter & Actions) ─────────
+function AssistantMessage({ msg, onRegenerate, isLatest }) {
+  const [displayedText, setDisplayedText] = useState(isLatest && msg.isNew ? '' : msg.content);
+  const [isTyping, setIsTyping] = useState(isLatest && msg.isNew);
+  const [copied, setCopied] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [feedback, setFeedback] = useState(null); // 'UP' | 'DOWN' | null
+
+  // Typewriter Streaming Animation for newly received assistant message
+  useEffect(() => {
+    if (isLatest && msg.isNew && msg.content) {
+      setIsTyping(true);
+      const fullText = msg.content;
+      let currLength = 0;
+      const step = Math.max(1, Math.floor(fullText.length / 30));
+
+      const timer = setInterval(() => {
+        currLength += step;
+        if (currLength >= fullText.length) {
+          setDisplayedText(fullText);
+          setIsTyping(false);
+          clearInterval(timer);
+        } else {
+          setDisplayedText(fullText.slice(0, currLength));
+        }
+      }, 15);
+
+      return () => clearInterval(timer);
+    } else {
+      setDisplayedText(msg.content);
+      setIsTyping(false);
+    }
+  }, [msg.id, msg.content, isLatest, msg.isNew]);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(msg.content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleSpeak = () => {
+    if ('speechSynthesis' in window) {
+      if (isSpeaking) {
+        window.speechSynthesis.cancel();
+        setIsSpeaking(false);
+      } else {
+        window.speechSynthesis.cancel();
+        // Plain text stripping for audio readout
+        const plainText = msg.content.replace(/[*#>`|-]/g, '');
+        const utterance = new SpeechSynthesisUtterance(plainText);
+        utterance.onend = () => setIsSpeaking(false);
+        utterance.onerror = () => setIsSpeaking(false);
+        window.speechSynthesis.speak(utterance);
+        setIsSpeaking(true);
+      }
+    }
+  };
+
+  return (
+    <div className="flex gap-2.5 justify-start group animate-fade-in">
+      <div className="w-6 h-6 rounded-full bg-gradient-to-br from-accent-blue/30 to-accent-purple/30 flex items-center justify-center text-accent-blue flex-shrink-0 mt-0.5 shadow-sm">
+        <Bot size={13} />
+      </div>
+      <div className="max-w-[85%] space-y-1.5">
+        <div className="bg-surface border border-border text-text rounded-2xl rounded-bl-none px-3.5 py-2.5 shadow-sm relative">
+          <MessageRenderer content={displayedText} />
+          {isTyping && (
+            <span className="inline-block w-1.5 h-3 bg-accent-blue animate-pulse ml-1 align-middle" />
+          )}
+        </div>
+
+        {/* ChatGPT Style Response Action Toolbar */}
+        {!isTyping && (
+          <div className="flex items-center gap-2 text-[10px] text-muted px-1 opacity-80 hover:opacity-100 transition-opacity">
+            <button
+              onClick={handleCopy}
+              className="flex items-center gap-1 hover:text-accent-blue transition-colors px-1.5 py-0.5 rounded hover:bg-card"
+              title="Copy message"
+            >
+              {copied ? <Check size={11} className="text-accent-green" /> : <Copy size={11} />}
+              <span>{copied ? 'Copied' : 'Copy'}</span>
+            </button>
+
+            {onRegenerate && (
+              <button
+                onClick={onRegenerate}
+                className="flex items-center gap-1 hover:text-accent-blue transition-colors px-1.5 py-0.5 rounded hover:bg-card"
+                title="Regenerate response"
+              >
+                <RotateCcw size={11} />
+                <span>Retry</span>
+              </button>
+            )}
+
+            {'speechSynthesis' in window && (
+              <button
+                onClick={handleSpeak}
+                className={`flex items-center gap-1 transition-colors px-1.5 py-0.5 rounded hover:bg-card ${
+                  isSpeaking ? 'text-accent-blue font-bold' : 'hover:text-accent-blue'
+                }`}
+                title="Listen to response"
+              >
+                {isSpeaking ? <VolumeX size={11} /> : <Volume2 size={11} />}
+                <span>{isSpeaking ? 'Stop' : 'Listen'}</span>
+              </button>
+            )}
+
+            <div className="flex items-center gap-1 ml-auto">
+              <button
+                onClick={() => setFeedback(f => f === 'UP' ? null : 'UP')}
+                className={`p-1 rounded hover:bg-card transition-colors ${
+                  feedback === 'UP' ? 'text-accent-green' : 'hover:text-text'
+                }`}
+                title="Helpful"
+              >
+                <ThumbsUp size={11} />
+              </button>
+              <button
+                onClick={() => setFeedback(f => f === 'DOWN' ? null : 'DOWN')}
+                className={`p-1 rounded hover:bg-card transition-colors ${
+                  feedback === 'DOWN' ? 'text-accent-red' : 'hover:text-text'
+                }`}
+                title="Not helpful"
+              >
+                <ThumbsDown size={11} />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 export default function ChatbotWidget() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
 
+  const initialWelcomeMsg = {
+    id: 'welcome',
+    role: 'ASSISTANT',
+    content:
+      '**Welcome to PlaceMate AI Career Coach!** 🚀\n\nI\'m your personal placement mentor powered by AI. Here\'s how I can help you today:\n\n- **Roadmap** — step-by-step study strategy\n- **Skill Twin** — skill gap analysis & readiness score\n- **Job Matching** — resume keyword & ATS score tips\n- **Interview Prep** — technical DSA & HR question guidance\n\n> Ask me anything to get started!',
+    isNew: false,
+  };
+
   useEffect(() => {
     if (isOpen && messages.length === 0) {
-      // Always start fresh on each login — never load previous chat history
-      setMessages([
-        {
-          id: 'welcome',
-          role: 'ASSISTANT',
-          content:
-            '**Welcome to PlaceMate AI Career Coach!**\n\nI\'m your personal placement mentor. Here\'s what I can help with:\n\n- **Roadmap** — creating and following your study plan\n- **Skill Twin** — understanding your skill gaps\n- **Job Matching** — improving your match percentage\n- **Interview Prep** — technical and behavioral tips\n- **Resume** — ATS scoring and optimization\n\n> Ask me anything to get started!',
-        },
-      ]);
+      setMessages([initialWelcomeMsg]);
     }
   }, [isOpen]);
 
@@ -245,7 +444,10 @@ export default function ChatbotWidget() {
 
     try {
       const { data } = await api.post('/chatbot', { content: query });
-      setMessages(m => [...m, data.message]);
+      setMessages(m => [
+        ...m,
+        { ...data.message, isNew: true },
+      ]);
     } catch (err) {
       setMessages(m => [
         ...m,
@@ -253,12 +455,25 @@ export default function ChatbotWidget() {
           id: `err-${Date.now()}`,
           role: 'ASSISTANT',
           content:
-            '**Connection Issue**\n\nSorry, I encountered an issue processing your request.\n\n- Check your internet connection\n- Try asking your question again\n\n> I\'m here to help whenever you\'re ready!',
+            '**Connection Notice**\n\nI encountered a temporary issue connecting to the AI server.\n\n- Check your internet connection\n- Click **Retry** below to resend your query\n\n> I\'m ready whenever you are!',
+          isNew: true,
         },
       ]);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRegenerate = () => {
+    const lastUserMsg = [...messages].reverse().find(m => m.role === 'USER');
+    if (lastUserMsg) {
+      handleSend(lastUserMsg.content);
+    }
+  };
+
+  const handleClearChat = () => {
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    setMessages([initialWelcomeMsg]);
   };
 
   return (
@@ -267,40 +482,65 @@ export default function ChatbotWidget() {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="relative flex items-center gap-2 px-4 py-3 bg-accent-blue hover:bg-accent-blue/90 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 group"
+          className="relative flex items-center gap-2.5 px-4.5 py-3 bg-gradient-to-r from-accent-blue to-accent-purple hover:opacity-95 text-white rounded-full shadow-lg hover:shadow-2xl transition-all duration-300 group scale-100 hover:scale-105"
           id="chatbot-trigger-btn"
         >
-          <Sparkles size={20} className="animate-pulse" />
-          <span className="text-[13px] font-semibold">AI Career Coach</span>
-          <span className="absolute -top-1 -right-1 w-3 h-3 bg-accent-green rounded-full border-2 border-bg" />
+          <Sparkles size={20} className="animate-pulse text-amber-300" />
+          <span className="text-[13.5px] font-bold tracking-wide">AI Career Coach</span>
+          <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-accent-green rounded-full border-2 border-bg" />
         </button>
       )}
 
-      {/* Floating Chat Window */}
+      {/* Floating / Expanded ChatGPT Window */}
       {isOpen && (
-        <div className="w-[400px] h-[560px] bg-card border border-border rounded-2xl shadow-card flex flex-col overflow-hidden animate-fade-in">
-          {/* Header */}
-          <div className="p-4 bg-surface border-b border-border flex items-center justify-between flex-shrink-0">
+        <div
+          className={`bg-card border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden transition-all duration-300 ${
+            isExpanded
+              ? 'fixed inset-6 sm:inset-12 z-50 w-auto h-auto'
+              : 'w-[410px] h-[580px]'
+          }`}
+        >
+          {/* ChatGPT Header */}
+          <div className="p-3.5 bg-surface/90 backdrop-blur-md border-b border-border flex items-center justify-between flex-shrink-0">
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-accent-blue/30 to-accent-purple/20 flex items-center justify-center text-accent-blue">
-                <Bot size={18} />
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-accent-blue/30 to-accent-purple/20 border border-accent-blue/30 flex items-center justify-center text-accent-blue shadow-sm">
+                <Bot size={19} />
               </div>
               <div>
-                <h3 className="text-[14px] font-bold text-text">PlaceMate AI Coach</h3>
-                <p className="text-[10px] text-accent-green flex items-center gap-1">
+                <h3 className="text-[14px] font-bold text-text flex items-center gap-1.5">
+                  PlaceMate AI Coach
+                  <span className="text-[9px] bg-accent-blue/15 text-accent-blue font-mono px-1.5 py-0.5 rounded border border-accent-blue/20">
+                    GPT-Powered
+                  </span>
+                </h3>
+                <p className="text-[10.5px] text-accent-green flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-accent-green inline-block animate-pulse" />
-                  Online &amp; Ready
+                  Interactive &amp; Online
                 </p>
               </div>
             </div>
+
             <div className="flex items-center gap-1">
-              <span className="text-[10px] text-muted hidden sm:block">
-                <MessageSquare size={11} className="inline mr-0.5" />
-                {messages.filter(m => m.role === 'USER').length} msgs
-              </span>
               <button
-                onClick={() => setIsOpen(false)}
-                className="p-1.5 text-muted hover:text-text rounded-lg hover:bg-card transition-colors ml-2"
+                onClick={handleClearChat}
+                className="p-1.5 text-muted hover:text-accent-red rounded-lg hover:bg-card transition-colors"
+                title="Clear Chat Session"
+              >
+                <Trash2 size={16} />
+              </button>
+              <button
+                onClick={() => setIsExpanded(v => !v)}
+                className="p-1.5 text-muted hover:text-text rounded-lg hover:bg-card transition-colors"
+                title={isExpanded ? 'Collapse view' : 'Expand view'}
+              >
+                {isExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+              </button>
+              <button
+                onClick={() => {
+                  if (window.speechSynthesis) window.speechSynthesis.cancel();
+                  setIsOpen(false);
+                }}
+                className="p-1.5 text-muted hover:text-text rounded-lg hover:bg-card transition-colors ml-1"
                 aria-label="Close chatbot"
               >
                 <X size={18} />
@@ -309,44 +549,35 @@ export default function ChatbotWidget() {
           </div>
 
           {/* Messages Container */}
-          <div className="flex-1 p-4 overflow-y-auto space-y-3">
-            {messages.map(msg => (
-              <div
-                key={msg.id}
-                className={`flex gap-2.5 ${msg.role === 'USER' ? 'justify-end' : 'justify-start'}`}
-              >
-                {msg.role === 'ASSISTANT' && (
-                  <div className="w-6 h-6 rounded-full bg-accent-blue/20 flex items-center justify-center text-accent-blue flex-shrink-0 mt-0.5">
-                    <Bot size={13} />
+          <div className="flex-1 p-4 overflow-y-auto space-y-3.5 bg-bg/50">
+            {messages.map((msg, idx) => (
+              <div key={msg.id || idx}>
+                {msg.role === 'USER' ? (
+                  <div className="flex gap-2.5 justify-end">
+                    <div className="max-w-[82%] px-3.5 py-2.5 rounded-2xl rounded-br-none bg-accent-blue text-white text-[12px] leading-relaxed shadow-sm">
+                      {msg.content}
+                    </div>
+                    <div className="w-6 h-6 rounded-full bg-surface border border-border flex items-center justify-center text-muted flex-shrink-0 mt-0.5">
+                      <User size={13} />
+                    </div>
                   </div>
-                )}
-                <div
-                  className={`max-w-[82%] px-3.5 py-2.5 rounded-2xl ${
-                    msg.role === 'USER'
-                      ? 'bg-accent-blue text-white rounded-br-none text-[12px] leading-relaxed'
-                      : 'bg-surface border border-border text-text rounded-bl-none'
-                  }`}
-                >
-                  {msg.role === 'USER' ? (
-                    <span className="text-[12px] leading-relaxed">{msg.content}</span>
-                  ) : (
-                    <MessageRenderer content={msg.content} />
-                  )}
-                </div>
-                {msg.role === 'USER' && (
-                  <div className="w-6 h-6 rounded-full bg-surface border border-border flex items-center justify-center text-muted flex-shrink-0 mt-0.5">
-                    <User size={13} />
-                  </div>
+                ) : (
+                  <AssistantMessage
+                    msg={msg}
+                    onRegenerate={idx === messages.length - 1 ? handleRegenerate : undefined}
+                    isLatest={idx === messages.length - 1}
+                  />
                 )}
               </div>
             ))}
 
             {loading && (
-              <div className="flex gap-2.5 items-center text-muted text-[12px]">
+              <div className="flex gap-2.5 items-center text-muted text-[12px] animate-fade-in">
                 <div className="w-6 h-6 rounded-full bg-accent-blue/20 flex items-center justify-center text-accent-blue flex-shrink-0">
                   <Bot size={13} />
                 </div>
-                <div className="bg-surface border border-border px-3.5 py-2 rounded-2xl flex items-center gap-1">
+                <div className="bg-surface border border-border px-3.5 py-2 rounded-2xl flex items-center gap-1.5 shadow-sm">
+                  <span className="text-[11px] text-muted font-medium mr-1">AI Coach is thinking</span>
                   <span className="w-1.5 h-1.5 bg-accent-blue rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                   <span className="w-1.5 h-1.5 bg-accent-blue rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                   <span className="w-1.5 h-1.5 bg-accent-blue rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
@@ -357,12 +588,12 @@ export default function ChatbotWidget() {
           </div>
 
           {/* Quick prompt chips */}
-          <div className="px-3 py-2 bg-surface/50 border-t border-border/50 flex items-center gap-1.5 overflow-x-auto no-scrollbar flex-shrink-0">
+          <div className="px-3 py-2 bg-surface/60 border-t border-border/50 flex items-center gap-1.5 overflow-x-auto no-scrollbar flex-shrink-0">
             {QUICK_CHIPS.map(chip => (
               <button
                 key={chip}
                 onClick={() => handleSend(chip)}
-                className="whitespace-nowrap px-2.5 py-1 bg-card hover:bg-surface border border-border/80 text-[10px] text-muted hover:text-accent-blue rounded-full transition-colors flex-shrink-0"
+                className="whitespace-nowrap px-2.5 py-1 bg-card hover:bg-surface border border-border/80 text-[10.5px] text-muted hover:text-accent-blue rounded-full transition-colors flex-shrink-0 font-medium"
               >
                 {chip}
               </button>
@@ -378,17 +609,17 @@ export default function ChatbotWidget() {
               type="text"
               value={input}
               onChange={e => setInput(e.target.value)}
-              placeholder="Ask AI Career Coach..."
-              className="flex-1 bg-card border border-border rounded-xl px-3 py-2 text-[12px] text-text placeholder:text-muted focus:outline-none focus:border-accent-blue transition-colors"
+              placeholder="Ask PlaceMate AI Coach anything..."
+              className="flex-1 bg-card border border-border rounded-xl px-3.5 py-2.5 text-[12.5px] text-text placeholder:text-muted focus:outline-none focus:border-accent-blue transition-colors shadow-inner"
               id="chatbot-input"
             />
             <button
               type="submit"
               disabled={!input.trim() || loading}
-              className="p-2.5 bg-accent-blue hover:bg-accent-blue/90 disabled:opacity-50 text-white rounded-xl transition-all"
+              className="p-2.5 bg-accent-blue hover:bg-accent-blue/90 disabled:opacity-40 text-white rounded-xl transition-all shadow-md flex-shrink-0"
               aria-label="Send message"
             >
-              <Send size={15} />
+              <Send size={16} />
             </button>
           </form>
         </div>
