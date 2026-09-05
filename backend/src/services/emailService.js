@@ -240,14 +240,14 @@ Best regards,
 The PlaceMate AI Team
     `;
 
-    if (process.env.BREVO_API_KEY || process.env.SENDINBLUE_API_KEY) {
-      const brevoRes = await sendEmailViaBrevo({ to: email, subject, html: htmlContent, text: textContent });
-      if (brevoRes && brevoRes.success) return brevoRes;
-    }
-
     if (process.env.RESEND_API_KEY) {
       const resendRes = await sendEmailViaResend({ to: email, subject, html: htmlContent, text: textContent });
       if (resendRes && resendRes.success) return resendRes;
+    }
+
+    if (process.env.BREVO_API_KEY || process.env.SENDINBLUE_API_KEY) {
+      const brevoRes = await sendEmailViaBrevo({ to: email, subject, html: htmlContent, text: textContent });
+      if (brevoRes && brevoRes.success) return brevoRes;
     }
 
     const { transporter } = await createTransporter();
@@ -348,14 +348,14 @@ Best regards,
 PlaceMate AI Security Team
     `;
 
-    if (process.env.BREVO_API_KEY || process.env.SENDINBLUE_API_KEY) {
-      const brevoRes = await sendEmailViaBrevo({ to: email, subject, html: htmlContent, text: textContent });
-      if (brevoRes && brevoRes.success) return brevoRes;
-    }
-
     if (process.env.RESEND_API_KEY) {
       const resendRes = await sendEmailViaResend({ to: email, subject, html: htmlContent, text: textContent });
       if (resendRes && resendRes.success) return resendRes;
+    }
+
+    if (process.env.BREVO_API_KEY || process.env.SENDINBLUE_API_KEY) {
+      const brevoRes = await sendEmailViaBrevo({ to: email, subject, html: htmlContent, text: textContent });
+      if (brevoRes && brevoRes.success) return brevoRes;
     }
 
     const { transporter } = await createTransporter();
@@ -458,14 +458,14 @@ Best regards,
 PlaceMate AI Team
     `;
 
-    if (process.env.BREVO_API_KEY || process.env.SENDINBLUE_API_KEY) {
-      const brevoRes = await sendEmailViaBrevo({ to: email, subject, html: htmlContent, text: textContent });
-      if (brevoRes && brevoRes.success) return { success: true, messageId: brevoRes.messageId, otp };
-    }
-
     if (process.env.RESEND_API_KEY) {
       const resendRes = await sendEmailViaResend({ to: email, subject, html: htmlContent, text: textContent });
       if (resendRes && resendRes.success) return { success: true, messageId: resendRes.messageId, otp };
+    }
+
+    if (process.env.BREVO_API_KEY || process.env.SENDINBLUE_API_KEY) {
+      const brevoRes = await sendEmailViaBrevo({ to: email, subject, html: htmlContent, text: textContent });
+      if (brevoRes && brevoRes.success) return { success: true, messageId: brevoRes.messageId, otp };
     }
 
     const { transporter } = await createTransporter();
@@ -567,14 +567,14 @@ Best regards,
 PlaceMate AI Security Team
     `;
 
-    if (process.env.BREVO_API_KEY || process.env.SENDINBLUE_API_KEY) {
-      const brevoRes = await sendEmailViaBrevo({ to: email, subject, html: htmlContent, text: textContent });
-      if (brevoRes && brevoRes.success) return { success: true, messageId: brevoRes.messageId, otp };
-    }
-
     if (process.env.RESEND_API_KEY) {
       const resendRes = await sendEmailViaResend({ to: email, subject, html: htmlContent, text: textContent });
       if (resendRes && resendRes.success) return { success: true, messageId: resendRes.messageId, otp };
+    }
+
+    if (process.env.BREVO_API_KEY || process.env.SENDINBLUE_API_KEY) {
+      const brevoRes = await sendEmailViaBrevo({ to: email, subject, html: htmlContent, text: textContent });
+      if (brevoRes && brevoRes.success) return { success: true, messageId: brevoRes.messageId, otp };
     }
 
     const { transporter } = await createTransporter();
