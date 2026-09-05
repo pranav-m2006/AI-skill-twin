@@ -142,7 +142,7 @@ async function createTransporter() {
 /**
  * Sends an email using nodemailer with a 15s timeout to support external email providers.
  */
-function sendMailWithTimeout(transporter, mailOptions, timeoutMs = 15000) {
+function sendMailWithTimeout(transporter, mailOptions, timeoutMs = 25000) {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
       reject(new Error(`SMTP mail dispatch timed out after ${timeoutMs}ms`));
