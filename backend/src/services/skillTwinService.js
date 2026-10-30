@@ -1,6 +1,6 @@
 'use strict';
 /**
- * skillTwinService.js — PlaceMate AI
+ * skillTwinService.js — AI Skill Twin
  *
  * Computes the AI Skill Twin from aggregated evidence:
  *   1. Profile data (domain, targetRole, yearsExp)

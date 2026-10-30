@@ -38,7 +38,7 @@ export default function Sidebar() {
       <div className="flex items-center justify-between px-4 py-5 border-b border-border">
         {!collapsed && (
           <span className="text-text font-bold text-base tracking-tight">
-            Place<span className="text-accent-blue">Mate</span> AI
+            AI <span className="text-accent-blue">Skill</span> Twin
           </span>
         )}
         <button

@@ -1,6 +1,6 @@
 'use strict';
 /**
- * seed.js — PlaceMate AI
+ * seed.js — AI Skill Twin
  * Run with: node prisma/seed.js  (from project root)
  *
  * Seeds: skills, companies, jobs, internships, aptitude questions
@@ -271,7 +271,7 @@ function makeAptitudeQuestions() {
 // MAIN SEED FUNCTION
 // ─────────────────────────────────────────────
 async function main() {
-  console.log('Seeding PlaceMate AI database...');
+  console.log('Seeding AI Skill Twin database...');
 
   // 1. Skills
   console.log('  → Skills...');

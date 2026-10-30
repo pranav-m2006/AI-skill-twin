@@ -1,6 +1,6 @@
 'use strict';
 /**
- * aptitudeService.js — PlaceMate AI
+ * aptitudeService.js — AI Skill Twin
  *
  * Adaptive difficulty engine for aptitude questions.
  * Difficulty escalates on sustained good performance and

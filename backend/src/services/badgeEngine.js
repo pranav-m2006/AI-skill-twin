@@ -1,6 +1,6 @@
 'use strict';
 /**
- * badgeEngine.js — PlaceMate AI
+ * badgeEngine.js — AI Skill Twin
  *
  * Append-only badge award system. Never mutates existing UserBadge records.
  * Called by streakEngine, roadmapEngine, and XP events.

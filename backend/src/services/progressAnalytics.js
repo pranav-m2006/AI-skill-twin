@@ -1,6 +1,6 @@
 'use strict';
 /**
- * progressAnalytics.js — PlaceMate AI
+ * progressAnalytics.js — AI Skill Twin
  *
  * Aggregates DailyActivity records into chart-ready series for the
  * Progress Analytics page and Dashboard.

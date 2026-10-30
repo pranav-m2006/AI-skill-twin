@@ -1,6 +1,6 @@
 'use strict';
 /**
- * matchingService.js — PlaceMate AI
+ * matchingService.js — AI Skill Twin
  *
  * Single implementation of TF-IDF cosine similarity used for:
  *  - Resume ↔ role matching

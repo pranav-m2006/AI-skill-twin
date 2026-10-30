@@ -1,6 +1,6 @@
 'use strict';
 /**
- * roadmapEngine.js — PlaceMate AI
+ * roadmapEngine.js — AI Skill Twin
  *
  * Generates multi-week Phase → Week → Day roadmaps for every supported domain.
  * Structure: Phase → Week (always 7 days) → Day (with real topic + time split).

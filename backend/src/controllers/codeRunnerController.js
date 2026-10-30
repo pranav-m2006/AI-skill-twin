@@ -1,6 +1,6 @@
 'use strict';
 /**
- * codeRunnerController.js — PlaceMate AI
+ * codeRunnerController.js — AI Skill Twin
  *
  * Multi-language Code Execution & Submission Engine.
  * Supports: JavaScript, TypeScript, Python, SQL, Java, C++, C, Go, Rust, C#, PHP, Ruby.

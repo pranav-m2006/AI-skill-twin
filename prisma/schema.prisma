@@ -1,4 +1,4 @@
-// PlaceMate AI — Prisma Schema v4
+// AI Skill Twin — Prisma Schema v4
 // SQLite for local dev, swappable to PostgreSQL via datasource url
 
 generator client {

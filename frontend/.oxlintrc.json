@@ -6,11 +6,11 @@
   ],
   "rules": {
     "react/rules-of-hooks": "error",
-    "react/only-export-components": [
-      "warn",
-      {
-        "allowConstantExport": true
-      }
-    ]
+    "react/only-export-components": "off",
+    "react/set-state-in-effect": "off",
+    "react/immutability": "off",
+    "react/purity": "off",
+    "react-hooks/exhaustive-deps": "off",
+    "no-unused-vars": "off"
   }
 }

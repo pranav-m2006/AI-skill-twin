@@ -240,7 +240,7 @@ async function register(req, res, next) {
       data: {
         userId: user.id,
         type: 'GOAL',
-        title: 'Welcome to PlaceMate AI! 🚀',
+        title: 'Welcome to AI Skill Twin! 🚀',
         body: `Welcome aboard, ${user.name}! Your account is active. Check your email for an encouraging welcome message and start your journey today!`,
         link: '/dashboard',
       },

@@ -1,6 +1,6 @@
 'use strict';
 /**
- * chatbotController.js — PlaceMate AI
+ * chatbotController.js — AI Skill Twin
  *
  * TF-IDF retrieval fallback always on.
  * If LLM API key is configured, uses it for richer, professionally formatted responses.
@@ -42,7 +42,7 @@ const KB = [
   },
   {
     q: 'what is xp',
-    a: '**XP (Experience Points) System**\n\nXP is earned by completing activities on PlaceMate AI:\n\n| Activity | XP Earned |\n|----------|-----------|\n| Complete a roadmap day | +50 XP |\n| Complete an assessment day | +150 XP |\n| Correct aptitude answer | +10 XP |\n| Earning a badge | Bonus XP |\n\n> XP unlocks badges and shows your overall platform engagement level.',
+    a: '**XP (Experience Points) System**\n\nXP is earned by completing activities on AI Skill Twin:\n\n| Activity | XP Earned |\n|----------|-----------|\n| Complete a roadmap day | +50 XP |\n| Complete an assessment day | +150 XP |\n| Correct aptitude answer | +10 XP |\n| Earning a badge | Bonus XP |\n\n> XP unlocks badges and shows your overall platform engagement level.',
   },
   {
     q: 'how do i upload resume',
@@ -50,7 +50,7 @@ const KB = [
   },
   {
     q: 'what domains are supported',
-    a: '**Supported Learning Domains**\n\nPlaceMate AI currently supports roadmaps for:\n\n- **Programming**: DSA, Python, Java, JavaScript, C++\n- **Web**: React, Node.js, Full Stack, HTML/CSS\n- **Data**: SQL, Machine Learning, Data Science\n- **DevOps**: Docker, AWS, CI/CD\n- **Other**: Cybersecurity, Aptitude & Reasoning\n\n> Choose your domain during profile setup or update it on the Profile page.',
+    a: '**Supported Learning Domains**\n\nAI Skill Twin currently supports roadmaps for:\n\n- **Programming**: DSA, Python, Java, JavaScript, C++\n- **Web**: React, Node.js, Full Stack, HTML/CSS\n- **Data**: SQL, Machine Learning, Data Science\n- **DevOps**: Docker, AWS, CI/CD\n- **Other**: Cybersecurity, Aptitude & Reasoning\n\n> Choose your domain during profile setup or update it on the Profile page.',
   },
 ];
 
@@ -95,7 +95,7 @@ function tfIdfFallback(query) {
   if (matches.length > 0 && matches[0].score > 0.05) {
     return KB[matches[0].idx].a;
   }
-  return '**PlaceMate AI Career Coach**\n\nI\'m here to help with your placement preparation journey!\n\nYou can ask me about:\n- **Roadmap** — how to start and follow your study plan\n- **Streak** — how daily streaks work and badge rewards\n- **Skill Twin** — understanding your skill gaps and readiness score\n- **Job Matching** — how to improve your job match percentage\n- **Resume** — ATS scoring and optimization tips\n- **Interview Prep** — technical and behavioral preparation strategies\n\n> Just type your question and I\'ll guide you!';
+  return '**AI Skill Twin Career Coach**\n\nI\'m here to help with your placement preparation journey!\n\nYou can ask me about:\n- **Roadmap** — how to start and follow your study plan\n- **Streak** — how daily streaks work and badge rewards\n- **Skill Twin** — understanding your skill gaps and readiness score\n- **Job Matching** — how to improve your job match percentage\n- **Resume** — ATS scoring and optimization tips\n- **Interview Prep** — technical and behavioral preparation strategies\n\n> Just type your question and I\'ll guide you!';
 }
 
 async function callLLM(content, userId) {
@@ -121,7 +121,7 @@ async function callLLM(content, userId) {
     ? user.yearsExp >= 5 ? 'Senior (5+ years)' : user.yearsExp >= 2 ? 'Mid-level (2-4 years)' : 'Junior (1-2 years)'
     : 'Fresher (0-1 years)';
 
-  const systemPrompt = `You are PlaceMate AI Career Coach, an expert AI mentor for student developers and placement aspirants.
+  const systemPrompt = `You are AI Skill Twin Career Coach, an expert AI mentor for student developers and placement aspirants.
 
 User Profile:
 - Name: ${user?.name || 'Student'}

@@ -739,7 +739,7 @@ Respond in EXACTLY this format:
             <Sparkles size={15} className="text-accent-purple" />
             <span className="text-[13px] font-semibold text-accent-purple">AI Code Analysis</span>
             <span className="ml-auto text-[10px] text-muted bg-card px-2 py-0.5 rounded-full border border-border">
-              PlaceMate AI
+              AI Skill Twin
             </span>
           </div>
           <div className="p-4">

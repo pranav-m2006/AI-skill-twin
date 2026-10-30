@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * Service to dispatch SMS OTP messages for PlaceMate AI user verification.
+ * Service to dispatch SMS OTP messages for AI Skill Twin user verification.
  * Supports Twilio API if credentials are provided in process.env, with a
  * seamless fallback to simulated console dispatch for local development.
  */
@@ -22,7 +22,7 @@ async function sendOtpSms({ phone, name, otp }) {
     }
 
     const userName = name || 'User';
-    const messageBody = `PlaceMate AI Verification Code: ${otp}. Valid for 10 minutes. Do not share this code with anyone.`;
+    const messageBody = `AI Skill Twin Verification Code: ${otp}. Valid for 10 minutes. Do not share this code with anyone.`;
 
     const accountSid = process.env.TWILIO_ACCOUNT_SID;
     const authToken = process.env.TWILIO_AUTH_TOKEN;
@@ -37,7 +37,7 @@ async function sendOtpSms({ phone, name, otp }) {
           from: fromPhone,
           to: formattedPhone,
         });
-        console.log(`[PlaceMate AI SMS OTP] Real SMS sent to ${formattedPhone} via Twilio SID: ${message.sid}`);
+        console.log(`[AI Skill Twin SMS OTP] Real SMS sent to ${formattedPhone} via Twilio SID: ${message.sid}`);
         return {
           success: true,
           channel: 'PHONE',
@@ -46,13 +46,13 @@ async function sendOtpSms({ phone, name, otp }) {
           isReal: true,
         };
       } catch (twilioErr) {
-        console.warn(`[PlaceMate AI SMS OTP Warning] Twilio API call failed, falling back to simulated SMS:`, twilioErr.message);
+        console.warn(`[AI Skill Twin SMS OTP Warning] Twilio API call failed, falling back to simulated SMS:`, twilioErr.message);
       }
     }
 
     // Fallback: Simulated SMS dispatch for local development
     console.log(`\n==================================================`);
-    console.log(`📱 [PlaceMate AI SMS OTP Verification]`);
+    console.log(`📱 [AI Skill Twin SMS OTP Verification]`);
     console.log(`To: ${formattedPhone} (${userName})`);
     console.log(`Message: ${messageBody}`);
     console.log(`OTP Code: [ ${otp} ]`);
@@ -66,7 +66,7 @@ async function sendOtpSms({ phone, name, otp }) {
       simulated: true,
     };
   } catch (err) {
-    console.error(`[PlaceMate AI SMS OTP Error] Failed to dispatch SMS OTP:`, err.message);
+    console.error(`[AI Skill Twin SMS OTP Error] Failed to dispatch SMS OTP:`, err.message);
     return {
       success: false,
       error: err.message,

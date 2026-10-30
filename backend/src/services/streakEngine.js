@@ -1,6 +1,6 @@
 'use strict';
 /**
- * streakEngine.js — PlaceMate AI
+ * streakEngine.js — AI Skill Twin
  *
  * Owns all streak computation. Single source of truth for the completion
  * threshold and all streak/activity updates. Never mutates badge history.

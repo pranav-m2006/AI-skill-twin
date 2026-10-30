@@ -1,5 +1,5 @@
 /**
- * Card.jsx — base card component for PlaceMate AI dark theme.
+ * Card.jsx — base card component for AI Skill Twin dark theme.
  * Uses --card bg, --border, 14px radius, generous padding.
  */
 export default function Card({ children, className = '', noPad = false, id }) {

@@ -77,7 +77,7 @@ app.use(errorHandler);
 // Start
 // ─────────────────────────────────────────────
 app.listen(port, () => {
-  console.log(`[PlaceMate AI] Server running on http://localhost:${port} (${nodeEnv})`);
+  console.log(`[AI Skill Twin] Server running on http://localhost:${port} (${nodeEnv})`);
 
   // ─── Hourly notification cron ────────────────────────────────────────────
   // Runs in the background; does NOT block startup or affect existing routes.

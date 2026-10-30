@@ -108,7 +108,7 @@ export default function TopBar({ sidebarWidth = 220 }) {
 
   const title = Object.entries(PAGE_TITLES).find(([path]) =>
     location.pathname.startsWith(path)
-  )?.[1] ?? 'PlaceMate AI';
+  )?.[1] ?? 'AI Skill Twin';
 
   const now = new Date();
   const dateStr = now.toLocaleDateString('en-IN', {

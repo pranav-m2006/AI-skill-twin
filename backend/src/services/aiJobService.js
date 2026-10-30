@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * aiJobService.js — PlaceMate AI
+ * aiJobService.js — AI Skill Twin
  *
  * Real-time location-aware Job & Internship data generator using Groq AI API.
  * Dynamically generates and syncs accurate real-world job & internship listings for

@@ -369,9 +369,8 @@ function AssistantMessage({ msg, onRegenerate, isLatest }) {
             {'speechSynthesis' in window && (
               <button
                 onClick={handleSpeak}
-                className={`flex items-center gap-1 transition-colors px-1.5 py-0.5 rounded hover:bg-card ${
-                  isSpeaking ? 'text-accent-blue font-bold' : 'hover:text-accent-blue'
-                }`}
+                className={`flex items-center gap-1 transition-colors px-1.5 py-0.5 rounded hover:bg-card ${isSpeaking ? 'text-accent-blue font-bold' : 'hover:text-accent-blue'
+                  }`}
                 title="Listen to response"
               >
                 {isSpeaking ? <VolumeX size={11} /> : <Volume2 size={11} />}
@@ -382,18 +381,16 @@ function AssistantMessage({ msg, onRegenerate, isLatest }) {
             <div className="flex items-center gap-1 ml-auto">
               <button
                 onClick={() => setFeedback(f => f === 'UP' ? null : 'UP')}
-                className={`p-1 rounded hover:bg-card transition-colors ${
-                  feedback === 'UP' ? 'text-accent-green' : 'hover:text-text'
-                }`}
+                className={`p-1 rounded hover:bg-card transition-colors ${feedback === 'UP' ? 'text-accent-green' : 'hover:text-text'
+                  }`}
                 title="Helpful"
               >
                 <ThumbsUp size={11} />
               </button>
               <button
                 onClick={() => setFeedback(f => f === 'DOWN' ? null : 'DOWN')}
-                className={`p-1 rounded hover:bg-card transition-colors ${
-                  feedback === 'DOWN' ? 'text-accent-red' : 'hover:text-text'
-                }`}
+                className={`p-1 rounded hover:bg-card transition-colors ${feedback === 'DOWN' ? 'text-accent-red' : 'hover:text-text'
+                  }`}
                 title="Not helpful"
               >
                 <ThumbsDown size={11} />
@@ -419,7 +416,7 @@ export default function ChatbotWidget() {
     id: 'welcome',
     role: 'ASSISTANT',
     content:
-      '**Welcome to PlaceMate AI Career Coach!** 🚀\n\nI\'m your personal placement mentor powered by AI. Here\'s how I can help you today:\n\n- **Roadmap** — step-by-step study strategy\n- **Skill Twin** — skill gap analysis & readiness score\n- **Job Matching** — resume keyword & ATS score tips\n- **Interview Prep** — technical DSA & HR question guidance\n\n> Ask me anything to get started!',
+      '**Welcome to AI Skill Twin Career Coach!** 🚀\n\nI\'m your personal placement mentor powered by AI. Here\'s how I can help you today:\n\n- **Roadmap** — step-by-step study strategy\n- **Skill Twin** — skill gap analysis & readiness score\n- **Job Matching** — resume keyword & ATS score tips\n- **Interview Prep** — technical DSA & HR question guidance\n\n> Ask me anything to get started!',
     isNew: false,
   };
 
@@ -494,11 +491,10 @@ export default function ChatbotWidget() {
       {/* Floating / Expanded ChatGPT Window */}
       {isOpen && (
         <div
-          className={`bg-card border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden transition-all duration-300 ${
-            isExpanded
+          className={`bg-card border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden transition-all duration-300 ${isExpanded
               ? 'fixed inset-6 sm:inset-12 z-50 w-auto h-auto'
               : 'w-[410px] h-[580px]'
-          }`}
+            }`}
         >
           {/* ChatGPT Header */}
           <div className="p-3.5 bg-surface/90 backdrop-blur-md border-b border-border flex items-center justify-between flex-shrink-0">
@@ -508,7 +504,7 @@ export default function ChatbotWidget() {
               </div>
               <div>
                 <h3 className="text-[14px] font-bold text-text flex items-center gap-1.5">
-                  PlaceMate AI Coach
+                  AI Skill Twin Coach
                   <span className="text-[9px] bg-accent-blue/15 text-accent-blue font-mono px-1.5 py-0.5 rounded border border-accent-blue/20">
                     GPT-Powered
                   </span>
@@ -609,7 +605,7 @@ export default function ChatbotWidget() {
               type="text"
               value={input}
               onChange={e => setInput(e.target.value)}
-              placeholder="Ask PlaceMate AI Coach anything..."
+              placeholder="Ask AI Skill Twin Coach anything..."
               className="flex-1 bg-card border border-border rounded-xl px-3.5 py-2.5 text-[12.5px] text-text placeholder:text-muted focus:outline-none focus:border-accent-blue transition-colors shadow-inner"
               id="chatbot-input"
             />

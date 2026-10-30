@@ -1,6 +1,6 @@
 'use strict';
 /**
- * notificationService.js — PlaceMate AI
+ * notificationService.js — AI Skill Twin
  *
  * Creates and queries Notification records.
  * Called by the controller (HTTP) and server cron (background).

@@ -121,7 +121,7 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-text">
-            Place<span className="text-accent-blue">Mate</span> AI
+            AI <span className="text-accent-blue">Skill</span> Twin
           </h1>
           <p className="text-muted text-[13px] mt-1">Your personalized career companion</p>
         </div>

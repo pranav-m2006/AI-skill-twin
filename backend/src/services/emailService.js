@@ -10,7 +10,8 @@ async function sendEmailViaResend({ to, subject, html, text }) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return null;
 
-  const from = process.env.RESEND_FROM || 'PlaceMate AI <onboarding@resend.dev>';
+  const rawFrom = process.env.RESEND_FROM || 'AI Skill Twin <onboarding@resend.dev>';
+  const from = rawFrom.replace(/PlaceMate\s*AI/gi, 'AI Skill Twin');
 
   try {
     const controller = new AbortController();
@@ -35,14 +36,14 @@ async function sendEmailViaResend({ to, subject, html, text }) {
 
     const data = await response.json();
     if (!response.ok) {
-      console.warn('[PlaceMate AI Resend API Warning]:', data.message || response.statusText);
+      console.warn('[AI Skill Twin Resend API Warning]:', data.message || response.statusText);
       return { success: false, error: data.message || response.statusText };
     }
 
-    console.log(`[PlaceMate AI Resend API] Email sent successfully to ${to}:`, data.id);
+    console.log(`[AI Skill Twin Resend API] Email sent successfully to ${to}:`, data.id);
     return { success: true, messageId: data.id };
   } catch (err) {
-    console.warn('[PlaceMate AI Resend API Error]:', err.message);
+    console.warn('[AI Skill Twin Resend API Error]:', err.message);
     return { success: false, error: err.message };
   }
 }
@@ -69,7 +70,7 @@ async function sendEmailViaBrevo({ to, subject, html, text }) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        sender: { name: 'PlaceMate AI', email: senderEmail },
+        sender: { name: 'AI Skill Twin', email: senderEmail },
         to: [{ email: Array.isArray(to) ? to[0] : to }],
         subject,
         htmlContent: html,
@@ -80,14 +81,14 @@ async function sendEmailViaBrevo({ to, subject, html, text }) {
 
     const data = await response.json();
     if (!response.ok) {
-      console.warn('[PlaceMate AI Brevo API Warning]:', data.message || response.statusText);
+      console.warn('[AI Skill Twin Brevo API Warning]:', data.message || response.statusText);
       return { success: false, error: data.message || response.statusText };
     }
 
-    console.log(`[PlaceMate AI Brevo API] Email sent successfully to ${to}:`, data.messageId || data.id);
+    console.log(`[AI Skill Twin Brevo API] Email sent successfully to ${to}:`, data.messageId || data.id);
     return { success: true, messageId: data.messageId || data.id };
   } catch (err) {
-    console.warn('[PlaceMate AI Brevo API Error]:', err.message);
+    console.warn('[AI Skill Twin Brevo API Error]:', err.message);
     return { success: false, error: err.message };
   }
 }
@@ -167,7 +168,7 @@ function sendMailWithTimeout(transporter, mailOptions, timeoutMs = 25000) {
 async function sendWelcomeEmail({ email, name, targetRole }) {
   try {
     const roleText = targetRole ? ` as a ${targetRole}` : '';
-    const subject = `Welcome to PlaceMate AI - Account Registration Confirmed`;
+    const subject = `Welcome to AI Skill Twin - Account Registration Confirmed`;
 
     const htmlContent = `
 <!DOCTYPE html>
@@ -192,14 +193,14 @@ async function sendWelcomeEmail({ email, name, targetRole }) {
 <body>
   <div class="container">
     <div class="header">
-      <h1>PlaceMate AI</h1>
+      <h1>AI Skill Twin</h1>
       <p>Your AI-Powered Career & Placement Accelerator</p>
     </div>
     <div class="content">
       <div class="greeting">Hello ${name},</div>
       <div class="badge">Registration Confirmed</div>
       
-      <p>Welcome to <strong>PlaceMate AI</strong>! We are excited to confirm that your registration is complete${roleText}.</p>
+      <p>Welcome to <strong>AI Skill Twin</strong>! We are excited to confirm that your registration is complete${roleText}.</p>
       
       <div class="quote-box">
         "Every expert was once a beginner. By taking this step today, you have set yourself on a powerful path towards achieving your career goals. Believe in your potential, stay consistent, and remember: small daily efforts compound into monumental success!"
@@ -215,11 +216,11 @@ async function sendWelcomeEmail({ email, name, targetRole }) {
 
       <p>If you have any questions or need support along the way, we are always here to help.</p>
 
-      <p>Best regards,<br><strong>The PlaceMate AI Team</strong></p>
+      <p>Best regards,<br><strong>The AI Skill Twin Team</strong></p>
     </div>
     <div class="footer">
-      &copy; ${new Date().getFullYear()} PlaceMate AI. All rights reserved.<br>
-      You received this email because you registered on PlaceMate AI.
+      &copy; ${new Date().getFullYear()} AI Skill Twin. All rights reserved.<br>
+      You received this email because you registered on AI Skill Twin.
     </div>
   </div>
 </body>
@@ -229,14 +230,14 @@ async function sendWelcomeEmail({ email, name, targetRole }) {
     const textContent = `
 Hello ${name},
 
-Welcome to PlaceMate AI! We are thrilled to confirm that you have successfully registered on PlaceMate AI${roleText}.
+Welcome to AI Skill Twin! We are thrilled to confirm that you have successfully registered on AI Skill Twin${roleText}.
 
 "Every expert was once a beginner. By taking this step today, you have set yourself on a powerful path towards achieving your career goals. Believe in your potential, stay consistent, and remember: small daily efforts compound into monumental success!"
 
 Wishing you the very best on your placement journey!
 
 Best regards,
-The PlaceMate AI Team
+The AI Skill Twin Team
     `;
 
     if (process.env.RESEND_API_KEY) {
@@ -251,7 +252,7 @@ The PlaceMate AI Team
 
     const { transporter } = await createTransporter();
     const senderEmail = process.env.SMTP_USER || 'pranavmahe6@gmail.com';
-    const fromAddress = `"PlaceMate AI" <${senderEmail}>`;
+    const fromAddress = `"AI Skill Twin" <${senderEmail}>`;
 
     const mailOptions = {
       from: fromAddress,
@@ -271,11 +272,11 @@ The PlaceMate AI Team
     };
 
     const info = await sendMailWithTimeout(transporter, mailOptions, 15000);
-    console.log(`[PlaceMate AI Email] Welcome email dispatched to ${email}:`, info.messageId || info);
+    console.log(`[AI Skill Twin Email] Welcome email dispatched to ${email}:`, info.messageId || info);
     return { success: true, messageId: info.messageId };
 
   } catch (err) {
-    console.error(`[PlaceMate AI Email Error] Failed to send welcome email to ${email}:`, err.message);
+    console.error(`[AI Skill Twin Email Error] Failed to send welcome email to ${email}:`, err.message);
     return { success: false, error: err.message };
   }
 }
@@ -286,10 +287,10 @@ The PlaceMate AI Team
 async function sendLoginNotificationEmail({ email, name }) {
   try {
     const senderEmail = process.env.SMTP_USER || 'pranavmahe6@gmail.com';
-    const fromAddress = `"PlaceMate AI" <${senderEmail}>`;
+    const fromAddress = `"AI Skill Twin" <${senderEmail}>`;
     const timeString = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' });
 
-    const subject = `PlaceMate AI Security Alert: Successful Login Notice`;
+    const subject = `AI Skill Twin Security Alert: Successful Login Notice`;
 
     const htmlContent = `
 <!DOCTYPE html>
@@ -310,14 +311,14 @@ async function sendLoginNotificationEmail({ email, name }) {
 <body>
   <div class="container">
     <div class="header">
-      <h1>PlaceMate AI</h1>
+      <h1>AI Skill Twin</h1>
       <p>Security Alert Notification</p>
     </div>
     <div class="content">
       <div class="greeting">Hello ${name},</div>
       <div class="badge">Security Notice: New Login</div>
       
-      <p>We detected a new successful login to your PlaceMate AI account.</p>
+      <p>We detected a new successful login to your AI Skill Twin account.</p>
 
       <table style="width:100%; border-collapse: collapse; margin: 20px 0; background: #f8fafc; border-radius: 8px;">
         <tr><td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; font-weight: 600;">Account Email:</td><td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0;">${email}</td></tr>
@@ -326,10 +327,10 @@ async function sendLoginNotificationEmail({ email, name }) {
 
       <p>If this was you, no action is needed.</p>
 
-      <p>Best regards,<br><strong>PlaceMate AI Security Team</strong></p>
+      <p>Best regards,<br><strong>AI Skill Twin Security Team</strong></p>
     </div>
     <div class="footer">
-      &copy; ${new Date().getFullYear()} PlaceMate AI. All rights reserved.
+      &copy; ${new Date().getFullYear()} AI Skill Twin. All rights reserved.
     </div>
   </div>
 </body>
@@ -339,12 +340,12 @@ async function sendLoginNotificationEmail({ email, name }) {
     const textContent = `
 Hello ${name},
 
-We detected a successful login to your PlaceMate AI account at ${timeString} (IST).
+We detected a successful login to your AI Skill Twin account at ${timeString} (IST).
 
 If this was you, no action is required.
 
 Best regards,
-PlaceMate AI Security Team
+AI Skill Twin Security Team
     `;
 
     if (process.env.RESEND_API_KEY) {
@@ -376,10 +377,10 @@ PlaceMate AI Security Team
     };
 
     const info = await sendMailWithTimeout(transporter, mailOptions, 15000);
-    console.log(`[PlaceMate AI Email] Login notification dispatched to ${email}:`, info.messageId || info);
+    console.log(`[AI Skill Twin Email] Login notification dispatched to ${email}:`, info.messageId || info);
     return { success: true, messageId: info.messageId };
   } catch (err) {
-    console.error(`[PlaceMate AI Email Error] Failed to send login email to ${email}:`, err.message);
+    console.error(`[AI Skill Twin Email Error] Failed to send login email to ${email}:`, err.message);
     return { success: false, error: err.message };
   }
 }
@@ -391,15 +392,15 @@ async function sendOtpEmail({ email, name, otp }) {
   const userName = name || 'User';
 
   console.log(`\n==================================================`);
-  console.log(`🔑 [PlaceMate AI Email OTP Verification]`);
+  console.log(`🔑 [AI Skill Twin Email OTP Verification]`);
   console.log(`To: ${email} (${userName})`);
   console.log(`OTP Code: [ ${otp} ]`);
   console.log(`==================================================\n`);
 
   try {
     const senderEmail = process.env.SMTP_USER || 'pranavmahe6@gmail.com';
-    const fromAddress = `"PlaceMate AI Verification" <${senderEmail}>`;
-    const subject = `PlaceMate AI Verification Code: ${otp}`;
+    const fromAddress = `"AI Skill Twin Verification" <${senderEmail}>`;
+    const subject = `AI Skill Twin Verification Code: ${otp}`;
 
     const htmlContent = `
 <!DOCTYPE html>
@@ -421,12 +422,12 @@ async function sendOtpEmail({ email, name, otp }) {
 <body>
   <div class="container">
     <div class="header">
-      <h1>PlaceMate AI</h1>
+      <h1>AI Skill Twin</h1>
       <p>Account Verification</p>
     </div>
     <div class="content">
       <div class="greeting">Hello ${userName},</div>
-      <p>Thank you for signing up on <strong>PlaceMate AI</strong>. Please enter the 6-digit verification code below to verify your account:</p>
+      <p>Thank you for signing up on <strong>AI Skill Twin</strong>. Please enter the 6-digit verification code below to verify your account:</p>
       
       <div class="otp-box">${otp}</div>
 
@@ -436,10 +437,10 @@ async function sendOtpEmail({ email, name, otp }) {
       <br>
       <p>If you did not request this verification, please ignore this message.</p>
 
-      <p>Best regards,<br><strong>PlaceMate AI Team</strong></p>
+      <p>Best regards,<br><strong>AI Skill Twin Team</strong></p>
     </div>
     <div class="footer">
-      &copy; ${new Date().getFullYear()} PlaceMate AI. All rights reserved.
+      &copy; ${new Date().getFullYear()} AI Skill Twin. All rights reserved.
     </div>
   </div>
 </body>
@@ -449,12 +450,12 @@ async function sendOtpEmail({ email, name, otp }) {
     const textContent = `
 Hello ${userName},
 
-Your PlaceMate AI verification code is: ${otp}
+Your AI Skill Twin verification code is: ${otp}
 
 This code is valid for 10 minutes. Please enter this code on the registration page to complete your account setup.
 
 Best regards,
-PlaceMate AI Team
+AI Skill Twin Team
     `;
 
     if (process.env.RESEND_API_KEY) {
@@ -486,10 +487,10 @@ PlaceMate AI Team
     };
 
     const info = await sendMailWithTimeout(transporter, mailOptions, 15000);
-    console.log(`[PlaceMate AI Email OTP] Verification OTP (${otp}) dispatched to ${email}:`, info.messageId || info);
+    console.log(`[AI Skill Twin Email OTP] Verification OTP (${otp}) dispatched to ${email}:`, info.messageId || info);
     return { success: true, messageId: info.messageId, otp };
   } catch (err) {
-    console.warn(`[PlaceMate AI Email OTP Warning] SMTP email dispatch warning for ${email}:`, err.message);
+    console.warn(`[AI Skill Twin Email OTP Warning] SMTP email dispatch warning for ${email}:`, err.message);
     return { success: true, simulated: true, error: err.message };
   }
 }
@@ -501,16 +502,16 @@ async function sendPasswordResetEmail({ email, name, otp }) {
   const userName = name || 'User';
 
   console.log(`\n==================================================`);
-  console.log(`🔐 [PlaceMate AI Password Reset Request]`);
+  console.log(`🔐 [AI Skill Twin Password Reset Request]`);
   console.log(`To: ${email} (${userName})`);
   console.log(`Reset Code: [ ${otp} ]`);
   console.log(`==================================================\n`);
 
   try {
     const senderEmail = process.env.SMTP_USER || 'pranavmahe6@gmail.com';
-    const fromAddress = `"PlaceMate AI Security" <${senderEmail}>`;
+    const fromAddress = `"AI Skill Twin Security" <${senderEmail}>`;
 
-    const subject = `PlaceMate AI Password Reset Code: ${otp}`;
+    const subject = `AI Skill Twin Password Reset Code: ${otp}`;
 
     const htmlContent = `
 <!DOCTYPE html>
@@ -532,12 +533,12 @@ async function sendPasswordResetEmail({ email, name, otp }) {
 <body>
   <div class="container">
     <div class="header">
-      <h1>PlaceMate AI</h1>
+      <h1>AI Skill Twin</h1>
       <p>Password Reset Request</p>
     </div>
     <div class="content">
       <div class="greeting">Hello ${userName},</div>
-      <p>We received a request to reset your PlaceMate AI account password. Please enter the 6-digit code below to verify and create a new password:</p>
+      <p>We received a request to reset your AI Skill Twin account password. Please enter the 6-digit code below to verify and create a new password:</p>
       
       <div class="otp-box">${otp}</div>
 
@@ -545,10 +546,10 @@ async function sendPasswordResetEmail({ email, name, otp }) {
         This code is valid for <strong>10 minutes</strong>. If you did not request a password reset, please ignore this message.
       </div>
       <br>
-      <p>Best regards,<br><strong>PlaceMate AI Security Team</strong></p>
+      <p>Best regards,<br><strong>AI Skill Twin Security Team</strong></p>
     </div>
     <div class="footer">
-      &copy; ${new Date().getFullYear()} PlaceMate AI. All rights reserved.
+      &copy; ${new Date().getFullYear()} AI Skill Twin. All rights reserved.
     </div>
   </div>
 </body>
@@ -558,12 +559,12 @@ async function sendPasswordResetEmail({ email, name, otp }) {
     const textContent = `
 Hello ${userName},
 
-Your PlaceMate AI password reset code is: ${otp}
+Your AI Skill Twin password reset code is: ${otp}
 
 This code is valid for 10 minutes. If you did not request a password reset, please ignore this email.
 
 Best regards,
-PlaceMate AI Security Team
+AI Skill Twin Security Team
     `;
 
     if (process.env.RESEND_API_KEY) {
@@ -595,10 +596,10 @@ PlaceMate AI Security Team
     };
 
     const info = await sendMailWithTimeout(transporter, mailOptions, 15000);
-    console.log(`[PlaceMate AI Reset Email] Password reset code (${otp}) sent to ${email}:`, info.messageId || info);
+    console.log(`[AI Skill Twin Reset Email] Password reset code (${otp}) sent to ${email}:`, info.messageId || info);
     return { success: true, messageId: info.messageId, otp };
   } catch (err) {
-    console.warn(`[PlaceMate AI Reset Warning] Password reset email warning for ${email}:`, err.message);
+    console.warn(`[AI Skill Twin Reset Warning] Password reset email warning for ${email}:`, err.message);
     return { success: true, simulated: true, error: err.message };
   }
 }

@@ -1,6 +1,6 @@
 'use strict';
 /**
- * notificationsController.js — PlaceMate AI
+ * notificationsController.js — AI Skill Twin
  *
  * REST endpoints for the notification system.
  * GET  /api/notifications            — list (paginated)

@@ -28,7 +28,7 @@ api.interceptors.response.use(
       if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
         err.message = 'Connection timed out. Render backend may be waking up from sleep. Please retry in a few seconds.';
       } else {
-        err.message = 'Unable to connect to PlaceMate AI backend server. Please verify backend URL and environment configuration.';
+        err.message = 'Unable to connect to AI Skill Twin backend server. Please verify backend URL and environment configuration.';
       }
     }
     return Promise.reject(err);
